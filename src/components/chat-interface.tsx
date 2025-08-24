@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useRef, ChangeEvent } from "react";
@@ -142,7 +143,7 @@ export default function ChatInterface({
     <SidebarProvider>
       <Sidebar
         variant="sidebar"
-        collapsible="offcanvas"
+        collapsible="icon"
         className="group hidden data-[state=expanded]:w-72 md:flex"
       >
         <SidebarContent className="p-2">
@@ -171,7 +172,7 @@ export default function ChatInterface({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <RubricFeedbackTool />
+                  <RubricFeedbackTool isDropdownItem={true} />
                 </DropdownMenuContent>
               </DropdownMenu>
               <Button variant="outline" size="sm" onClick={handleReset}>
@@ -282,7 +283,7 @@ function ChatMessage({ role, content }: { role: string; content: string }) {
         )}
       >
         <div className="prose prose-sm max-w-none">
-          <ReactMarkdown
+           <ReactMarkdown
             components={{
               p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
             }}

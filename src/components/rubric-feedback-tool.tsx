@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -21,7 +22,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenuItem } from "./ui/dropdown-menu";
 
-export function RubricFeedbackTool() {
+interface RubricFeedbackToolProps {
+  isDropdownItem?: boolean;
+}
+
+
+export function RubricFeedbackTool({ isDropdownItem = false }: RubricFeedbackToolProps) {
   const [rubric, setRubric] = useState("");
   const [studentWork, setStudentWork] = useState("");
   const [subject, setSubject] = useState("");
@@ -99,15 +105,21 @@ export function RubricFeedbackTool() {
     setIsLoading(false);
   }
 
+  const TriggerComponent = isDropdownItem ? DropdownMenuItem : Button;
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
         setIsOpen(open);
         if(!open) resetForm();
     }}>
       <DialogTrigger asChild>
-        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+        <TriggerComponent 
+            variant={isDropdownItem ? undefined : "ghost"}
+            className={isDropdownItem ? "" : "w-full justify-start text-left h-auto"}
+            onSelect={isDropdownItem ? (e) => e.preventDefault() : undefined}
+        >
           <Wand2 className="mr-2 h-4 w-4" /> Formative Feedback
-        </DropdownMenuItem>
+        </TriggerComponent>
       </DialogTrigger>
       <DialogContent className="sm:max-w-4xl h-[90vh] flex flex-col">
         <DialogHeader>
