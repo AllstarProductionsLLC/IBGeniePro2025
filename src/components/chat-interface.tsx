@@ -7,6 +7,7 @@ import {
   SidebarContent,
   SidebarProvider,
   SidebarTrigger,
+  SidebarInset,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import {
@@ -139,122 +140,121 @@ export default function ChatInterface({
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full flex-col bg-background">
-        <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm sm:h-16 sm:px-6">
-          <SidebarTrigger className="md:hidden" />
-          <div className="flex flex-1 items-center gap-2">
-            <IbGenieLogo className="h-7 w-7 text-primary" />
-            <h1 className="text-lg font-semibold tracking-tight md:text-xl font-headline whitespace-nowrap">
-              {isMobile ? "IBGenie" : identityText}
-            </h1>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <SidebarTrigger className="hidden md:flex" />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Wand2 className="mr-2 h-4 w-4" /> Tools
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <RubricFeedbackTool />
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button variant="outline" size="sm" onClick={handleReset}>
-              <Trash2 className="mr-2 h-4 w-4" /> New Session
-            </Button>
-          </div>
-        </header>
+      <Sidebar
+        variant="sidebar"
+        collapsible="offcanvas"
+        className="group hidden data-[state=expanded]:w-72 md:flex"
+      >
+        <SidebarContent className="p-2">
+          <PromptLibrary
+            role={role}
+            program={program}
+            setInput={setInput}
+          />
+        </SidebarContent>
+      </Sidebar>
+      <SidebarInset>
+        <div className="flex h-screen w-full flex-col bg-background">
+          <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm sm:h-16 sm:px-6">
+            <SidebarTrigger />
+            <div className="flex flex-1 items-center gap-2">
+              <IbGenieLogo className="h-7 w-7 text-primary" />
+              <h1 className="text-lg font-semibold tracking-tight md:text-xl font-headline whitespace-nowrap">
+                {isMobile ? "IBGenie" : identityText}
+              </h1>
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Wand2 className="mr-2 h-4 w-4" /> Tools
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <RubricFeedbackTool />
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button variant="outline" size="sm" onClick={handleReset}>
+                <Trash2 className="mr-2 h-4 w-4" /> New Session
+              </Button>
+            </div>
+          </header>
 
-        <div className="flex flex-1 overflow-hidden">
-          <Sidebar
-            variant="sidebar"
-            collapsible="icon"
-            className="group hidden data-[state=expanded]:w-72 md:flex"
-          >
-            <SidebarContent className="p-2">
-              <PromptLibrary
-                role={role}
-                program={program}
-                setInput={setInput}
-              />
-            </SidebarContent>
-          </Sidebar>
-          <main className="flex flex-1 flex-col">
-            <ScrollArea className="flex-1">
-              <div className="p-4 md:p-6">
-                <div className="mx-auto max-w-4xl space-y-6">
-                  {messages.map((message, index) => (
-                    <ChatMessage key={index} {...message} />
-                  ))}
-                  {isLoading && <Thinking />}
+          <main className="flex flex-1 flex-col overflow-hidden">
+              <ScrollArea className="flex-1">
+                <div className="p-4 md:p-6">
+                  <div className="mx-auto max-w-4xl space-y-6">
+                    {messages.map((message, index) => (
+                      <ChatMessage key={index} {...message} />
+                    ))}
+                    {isLoading && <Thinking />}
+                  </div>
                 </div>
-              </div>
-            </ScrollArea>
-            <div className="border-t bg-background p-4 md:p-6">
-              <div className="mx-auto max-w-4xl">
-                {file && (
-                  <div className="mb-2 flex items-center justify-center">
-                    <Badge variant="secondary">
-                      {file.name}
+              </ScrollArea>
+              <div className="border-t bg-background p-4 md:p-6">
+                <div className="mx-auto max-w-4xl">
+                  {file && (
+                    <div className="mb-2 flex items-center justify-center">
+                      <Badge variant="secondary">
+                        {file.name}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="ml-2 h-4 w-4"
+                          onClick={removeFile}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </Badge>
+                    </div>
+                  )}
+                  <div className="relative">
+                    <Textarea
+                      placeholder="Ask IBGenie anything..."
+                      className="min-h-12 resize-none pr-32"
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSend();
+                        }
+                      }}
+                      disabled={isLoading}
+                    />
+                    <div className="absolute bottom-2.5 right-3 flex items-center gap-1">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="ml-2 h-4 w-4"
-                        onClick={removeFile}
+                        onClick={triggerFileUpload}
+                        disabled={isLoading}
                       >
-                        <X className="h-3 w-3" />
+                        <FileUp className="h-5 w-5" />
                       </Button>
-                    </Badge>
+                      <Button
+                        onClick={handleSend}
+                        size="icon"
+                        disabled={isLoading}
+                      >
+                        <Send className="h-5 w-5" />
+                      </Button>
+                    </div>
                   </div>
-                )}
-                <div className="relative">
-                  <Textarea
-                    placeholder="Ask IBGenie anything..."
-                    className="min-h-12 resize-none pr-32"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSend();
-                      }
-                    }}
-                    disabled={isLoading}
-                  />
-                  <div className="absolute bottom-2.5 right-3 flex items-center gap-1">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleFileUpload}
-                      className="hidden"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={triggerFileUpload}
-                      disabled={isLoading}
-                    >
-                      <FileUp className="h-5 w-5" />
-                    </Button>
-                    <Button
-                      onClick={handleSend}
-                      size="icon"
-                      disabled={isLoading}
-                    >
-                      <Send className="h-5 w-5" />
-                    </Button>
-                  </div>
+                  <p className="mt-2 text-center text-xs text-muted-foreground">
+                    Use AI responsibly. Acknowledge where AI assisted you. Follow
+                    your school’s IB academic integrity policy.
+                  </p>
                 </div>
-                <p className="mt-2 text-center text-xs text-muted-foreground">
-                  Use AI responsibly. Acknowledge where AI assisted you. Follow
-                  your school’s IB academic integrity policy.
-                </p>
               </div>
-            </div>
           </main>
         </div>
-      </div>
+      </SidebarInset>
     </SidebarProvider>
   );
 }
@@ -281,11 +281,14 @@ function ChatMessage({ role, content }: { role: string; content: string }) {
             : "bg-primary text-primary-foreground"
         )}
       >
-        {isAssistant ? (
-          <ReactMarkdown>{content}</ReactMarkdown>
-        ) : (
-          <p>{content}</p>
-        )}
+        <ReactMarkdown
+          className="prose prose-sm max-w-none"
+          components={{
+            p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+          }}
+        >
+          {content}
+        </ReactMarkdown>
       </div>
     </div>
   );
