@@ -281,14 +281,15 @@ function ChatMessage({ role, content }: { role: string; content: string }) {
             : "bg-primary text-primary-foreground"
         )}
       >
-        <ReactMarkdown
-          className="prose prose-sm max-w-none"
-          components={{
-            p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
-          }}
-        >
-          {content}
-        </ReactMarkdown>
+        <div className="prose prose-sm max-w-none">
+          <ReactMarkdown
+            components={{
+              p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+            }}
+          >
+            {content}
+          </ReactMarkdown>
+        </div>
       </div>
     </div>
   );
