@@ -17,10 +17,9 @@ import { Label } from "./ui/label";
 import { ScrollArea } from "./ui/scroll-area";
 import { Loader2, Wand2, Clipboard } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
-import { rubricFeedback } from "@/ai/flows/rubric-feedback";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { VisuallyHidden } from "./ui/visually-hidden";
+import { DropdownMenuItem } from "./ui/dropdown-menu";
 
 export function RubricFeedbackTool() {
   const [rubric, setRubric] = useState("");
@@ -45,12 +44,22 @@ export function RubricFeedbackTool() {
     setIsLoading(true);
     setFeedback("");
     try {
-      const result = await rubricFeedback({
-        rubricText: rubric,
-        studentWorkText: studentWork,
-        program: program,
-        subject: subject,
+      const response = await fetch("/api/rubric", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rubricText: rubric,
+          studentWorkText: studentWork,
+          program: program,
+          subject: subject,
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate feedback");
+      }
+
+      const result = await response.json();
       setFeedback(result.feedback);
     } catch (error) {
       console.error("Error generating feedback:", error);
@@ -96,40 +105,38 @@ export function RubricFeedbackTool() {
         if(!open) resetForm();
     }}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-full justify-start">
+        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
           <Wand2 className="mr-2 h-4 w-4" /> Formative Feedback
-        </Button>
+        </DropdownMenuItem>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-4xl h-[90vh]">
+      <DialogContent className="sm:max-w-4xl h-[90vh] flex flex-col">
         <DialogHeader>
-          <VisuallyHidden>
-            <DialogTitle>Rubric-Based Formative Feedback</DialogTitle>
-            <DialogDescription>
-              Paste your rubric and the student's work to get criterion-linked
-              feedback.
-            </DialogDescription>
-          </VisuallyHidden>
+          <DialogTitle>Rubric-Based Formative Feedback</DialogTitle>
+          <DialogDescription>
+            Paste your rubric and the student's work to get criterion-linked
+            feedback.
+          </DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4 h-full overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4 flex-1 min-h-0">
           <div className="space-y-4 flex flex-col">
-            <div className="grid w-full gap-1.5">
+            <div className="grid w-full gap-1.5 flex-1 flex-col">
               <Label htmlFor="rubric">Rubric Text</Label>
               <Textarea
                 placeholder="Paste rubric descriptors here."
                 id="rubric"
                 value={rubric}
                 onChange={(e) => setRubric(e.target.value)}
-                className="flex-1"
+                className="flex-1 resize-none"
               />
             </div>
-            <div className="grid w-full gap-1.5">
+            <div className="grid w-full gap-1.5 flex-1 flex-col">
               <Label htmlFor="student-work">Student Work Text</Label>
               <Textarea
                 placeholder="Paste student work here."
                 id="student-work"
                 value={studentWork}
                 onChange={(e) => setStudentWork(e.target.value)}
-                className="flex-1"
+                className="flex-1 resize-none"
               />
             </div>
              <div className="grid grid-cols-2 gap-4">
@@ -151,7 +158,7 @@ export function RubricFeedbackTool() {
                     placeholder="e.g. History"
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    className="min-h-0 h-10"
+                    className="min-h-0 h-10 resize-none"
                     />
                 </div>
             </div>
