@@ -15,11 +15,12 @@ import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
 import { ScrollArea } from "./ui/scroll-area";
-import { Loader2, Wand2 } from "lucide-react";
+import { Loader2, Wand2, Clipboard } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { rubricFeedback } from "@/ai/flows/rubric-feedback";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { VisuallyHidden } from "./ui/visually-hidden";
 
 export function RubricFeedbackTool() {
   const [rubric, setRubric] = useState("");
@@ -62,6 +63,23 @@ export function RubricFeedbackTool() {
       setIsLoading(false);
     }
   };
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(feedback);
+      toast({
+        title: "Copied!",
+        description: "Feedback copied to clipboard.",
+      });
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Copy Failed",
+        description: "Could not copy to clipboard. Please try again.",
+      });
+      console.error("Failed to copy text: ", err);
+    }
+  };
   
   const resetForm = () => {
     setRubric("");
@@ -84,13 +102,13 @@ export function RubricFeedbackTool() {
       </DialogTrigger>
       <DialogContent className="sm:max-w-4xl h-[90vh]">
         <DialogHeader>
-          <DialogTitle className="font-headline">
-            Rubric-Based Formative Feedback
-          </DialogTitle>
-          <DialogDescription>
-            Paste your rubric and the student's work to get criterion-linked
-            feedback.
-          </DialogDescription>
+          <VisuallyHidden>
+            <DialogTitle>Rubric-Based Formative Feedback</DialogTitle>
+            <DialogDescription>
+              Paste your rubric and the student's work to get criterion-linked
+              feedback.
+            </DialogDescription>
+          </VisuallyHidden>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4 h-full overflow-hidden">
           <div className="space-y-4 flex flex-col">
@@ -139,7 +157,14 @@ export function RubricFeedbackTool() {
             </div>
           </div>
           <div className="bg-muted rounded-lg p-4 flex flex-col">
-            <h3 className="font-semibold mb-2">Generated Feedback</h3>
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="font-semibold">Generated Feedback</h3>
+              {feedback && (
+                <Button variant="ghost" size="icon" onClick={handleCopy}>
+                  <Clipboard className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
             <ScrollArea className="flex-1 -m-4">
                 <div className="p-4">
               {isLoading && (

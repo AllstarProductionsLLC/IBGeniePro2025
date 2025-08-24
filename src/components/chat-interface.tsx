@@ -1,18 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import type { ComponentProps } from "react";
+import { useEffect, useState } from "react";
+import { GoogleGenerativeAI, ChatSession } from "@google/generative-ai";
+import ReactMarkdown from "react-markdown";
 import {
   Sidebar,
   SidebarContent,
-  SidebarHeader,
-  SidebarInset,
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import {
-  Book,
   Bot,
   CircleUser,
   FileUp,
@@ -21,7 +19,6 @@ import {
   Send,
   Settings2,
   Trash2,
-  X,
 } from "lucide-react";
 import type { Role, Program } from "@/app/page";
 import { IbGenieLogo } from "./ib-genie-logo";
@@ -29,10 +26,11 @@ import { PromptLibrary } from "./prompt-library";
 import { ContextPanel } from "./context-panel";
 import { Textarea } from "./ui/textarea";
 import { ScrollArea } from "./ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Avatar, AvatarFallback } from "./ui/avatar";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
+import { personalities } from "@/lib/personalities";
 
 interface ChatInterfaceProps {
   role: Role;
@@ -40,37 +38,101 @@ interface ChatInterfaceProps {
   onReset: () => void;
 }
 
-const initialMessages = [
-  {
-    role: "assistant",
-    content:
-      "Hello! I am IBGenie, your AI assistant for the International Baccalaureate. How can I help you today?",
-  },
-];
-
 export default function ChatInterface({
   role,
   program,
   onReset,
 }: ChatInterfaceProps) {
   const isMobile = useIsMobile();
-  const [messages, setMessages] = useState(initialMessages);
+  const [messages, setMessages] = useState<{ role: string; content: string }[]>(
+    []
+  );
   const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [chat, setChat] = useState<ChatSession | null>(null);
+
+  const personality = personalities[role][program];
+
+  useEffect(() => {
+    const initChat = async () => {
+      try {
+        const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+        if (!apiKey) {
+          throw new Error("GEMINI_API_KEY is not set.");
+        }
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({
+          model: "gemini-1.5-flash",
+          systemInstruction: personality.systemPrompt,
+        });
+        const newChat = model.startChat({
+          history: [],
+        });
+        setChat(newChat);
+        setMessages([
+          {
+            role: "assistant",
+            content: personality.welcomeMessage,
+          },
+        ]);
+      } catch (error) {
+        console.error("Error initializing chat:", error);
+        setMessages([
+          {
+            role: "assistant",
+            content: "Error: Failed to initialize AI.",
+          },
+        ]);
+      }
+    };
+    initChat();
+  }, [role, program, personality.systemPrompt, personality.welcomeMessage]);
 
   const capitalizedRole = role.charAt(0).toUpperCase() + role.slice(1);
-  const programName = program.toUpperCase();
   const identityText = `IB Genie ${capitalizedRole} Edition`;
 
-  const handleSend = () => {
-    if (input.trim()) {
-      setMessages([...messages, { role: "user", content: input }]);
-      // TODO: Add AI response logic
+  const handleSend = async () => {
+    if (input.trim() && chat) {
+      const newUserMessage = { role: "user", content: input };
+      setMessages((prevMessages) => [...prevMessages, newUserMessage]);
       setInput("");
+      setIsLoading(true);
+
+      try {
+        const result = await chat.sendMessage(input);
+        const response = await result.response;
+        const text = response.text();
+
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          { role: "assistant", content: text },
+        ]);
+      } catch (error) {
+        console.error("Error calling Gemini API:", error);
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            role: "assistant",
+            content: "Error: Failed to get response from AI.",
+          },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
-  
+
   const handleClear = () => {
-    setMessages(initialMessages);
+    setMessages([
+      {
+        role: "assistant",
+        content: personality.welcomeMessage,
+      },
+    ]);
+  };
+
+  const handleReset = () => {
+    handleClear();
     onReset();
   }
 
@@ -88,9 +150,9 @@ export default function ChatInterface({
             </h1>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleClear}>
+            <Button variant="outline" size="sm" onClick={handleReset}>
               <Trash2 className="mr-2 h-4 w-4" />
-              Clear History
+              New Session
             </Button>
             {isMobile && (
               <Sheet>
@@ -114,7 +176,11 @@ export default function ChatInterface({
             className="group hidden data-[state=expanded]:w-72 md:flex"
           >
             <SidebarContent className="p-2">
-              <PromptLibrary role={role} program={program} setInput={setInput} />
+              <PromptLibrary
+                role={role}
+                program={program}
+                setInput={setInput}
+              />
             </SidebarContent>
           </Sidebar>
           <main className="flex flex-1 flex-col">
@@ -124,6 +190,7 @@ export default function ChatInterface({
                   {messages.map((message, index) => (
                     <ChatMessage key={index} {...message} />
                   ))}
+                  {isLoading && <Thinking />}
                 </div>
               </div>
             </ScrollArea>
@@ -141,6 +208,7 @@ export default function ChatInterface({
                         handleSend();
                       }
                     }}
+                    disabled={isLoading}
                   />
                   <div className="absolute bottom-2.5 right-3 flex items-center gap-1">
                     <Button variant="ghost" size="icon">
@@ -149,7 +217,11 @@ export default function ChatInterface({
                     <Button variant="ghost" size="icon">
                       <Mic className="h-5 w-5" />
                     </Button>
-                    <Button onClick={handleSend} size="icon">
+                    <Button
+                      onClick={handleSend}
+                      size="icon"
+                      disabled={isLoading}
+                    >
                       <Send className="h-5 w-5" />
                     </Button>
                   </div>
@@ -188,13 +260,40 @@ function ChatMessage({ role, content }: { role: string; content: string }) {
       </Avatar>
       <div
         className={cn(
-          "max-w-[75%] rounded-lg p-3 text-sm",
-          isAssistant
-            ? "bg-muted"
-            : "bg-primary text-primary-foreground"
+          "max-w-[75%] rounded-lg p-3 text-.sm",
+          isAssistant ? "bg-muted" : "bg-primary text-primary-foreground"
         )}
       >
-        <p>{content}</p>
+        {isAssistant ? (
+          <ReactMarkdown>{content}</ReactMarkdown>
+        ) : (
+          <p>{content}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Thinking() {
+  return (
+    <div className="flex items-start gap-4">
+      <Avatar>
+        <AvatarFallback>
+          <Bot />
+        </AvatarFallback>
+      </Avatar>
+      <div className="max-w-[75%] rounded-lg p-3 text-sm bg-muted">
+        <div className="flex items-center gap-2">
+          <div className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+          <div
+            className="h-2 w-2 animate-pulse rounded-full bg-primary"
+            style={{ animationDelay: "0.2s" }}
+          />
+          <div
+            className="h-2 w-2 animate-pulse rounded-full bg-primary"
+            style={{ animationDelay: "0.4s" }}
+          />
+        </div>
       </div>
     </div>
   );
