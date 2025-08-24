@@ -6,13 +6,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
 import type { Role, Program } from "@/app/page";
@@ -35,32 +28,14 @@ export function ContextPanel({ role, program }: ContextPanelProps) {
       <div className="p-4">
         <h2 className="text-lg font-semibold font-headline">Context & Tools</h2>
       </div>
-      <Tabs defaultValue="model" className="flex flex-1 flex-col overflow-hidden">
+      <Tabs defaultValue="resources" className="flex flex-1 flex-col overflow-hidden">
         <div className="px-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="model">Model</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="resources">Resources</TabsTrigger>
             <TabsTrigger value="export">Export</TabsTrigger>
           </TabsList>
         </div>
         <ScrollArea className="flex-1">
-          <TabsContent value="model" className="p-4">
-            <div className="space-y-4">
-              <h3 className="font-medium">Model Selection</h3>
-              <Select defaultValue="gemini-2.5-flash">
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a model" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="gemini-2.5-flash">
-                    Gemini 2.5 Flash
-                  </SelectItem>
-                  <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
-                  <SelectItem value="gpt-5">GPT-5</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </TabsContent>
           <TabsContent value="resources" className="p-4">
             <div className="space-y-4">
               <h3 className="font-medium">IB-Aligned Templates</h3>
