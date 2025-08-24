@@ -1,3 +1,4 @@
+
 "use client";
 
 import { prompts } from "@/lib/prompts";
@@ -6,6 +7,11 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Button } from "./ui/button";
 import { Lightbulb, BookOpen, FlaskConical } from "lucide-react";
 import { RubricFeedbackTool } from "./rubric-feedback-tool";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
 interface PromptLibraryProps {
   role: Role;
