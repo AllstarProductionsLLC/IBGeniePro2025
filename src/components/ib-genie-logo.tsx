@@ -15,11 +15,9 @@ export function IbGenieLogo(props: SVGProps<SVGSVGElement>) {
       {...props}
     >
       <title>IBGenie Logo</title>
-      <path d="M12 2a10 10 0 1 0 10 10" />
-      <path d="M12 2a10 10 0 1 0-1.41-1.41" />
-      <path d="m15.5 6.5 3 3" />
-      <path d="m8.5 17.5 3 3" />
-      <path d="M12 8a4 4 0 0 0-4 4h8a4 4 0 0 0-4-4Z" />
+      <path d="M10 3L8 8L3 10L8 12L10 17L12 12L17 10L12 8L10 3Z" />
+      <path d="M18 6L17.5 7.5L16 8L17.5 8.5L18 10L18.5 8.5L20 8L18.5 7.5L18 6Z" />
+      <path d="M6 18L6.5 16.5L8 16L6.5 15.5L6 14L5.5 15.5L4 16L5.5 16.5L6 18Z" />
     </svg>
   );
 }
