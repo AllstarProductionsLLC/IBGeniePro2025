@@ -19,7 +19,8 @@ import {
   Send,
   Trash2,
   X,
-  Wand2,
+  Copy,
+  FileDown,
 } from "lucide-react";
 import type { Role, Program } from "@/app/page";
 import { IbGenieLogo } from "./ib-genie-logo";
@@ -34,9 +35,11 @@ import { Badge } from "./ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { RubricFeedbackTool } from "./rubric-feedback-tool";
+import { useToast } from "@/hooks/use-toast";
+
 
 interface ChatInterfaceProps {
   role: Role;
@@ -57,6 +60,7 @@ export default function ChatInterface({
   const [isLoading, setIsLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const { toast } = useToast();
 
   const personality = personalities[role][program];
 
@@ -136,6 +140,54 @@ export default function ChatInterface({
     onReset();
   };
 
+  const handleCopy = () => {
+    const chatText = messages
+      .map(
+        (msg) =>
+          `${msg.role === "assistant" ? "IBGenie" : "User"}:\n${msg.content}`
+      )
+      .join("\n\n");
+
+    navigator.clipboard.writeText(chatText).then(
+      () => {
+        toast({
+          title: "Copied!",
+          description: "Chat copied to clipboard.",
+        });
+      },
+      () => {
+        toast({
+          variant: "destructive",
+          title: "Copy Failed",
+          description: "Could not copy to clipboard. Please try again.",
+        });
+      }
+    );
+  };
+  
+  const handleExportWord = () => {
+    const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Chat Export</title></head><body>";
+    const footer = "</body></html>";
+    let content = "";
+    messages.forEach(msg => {
+        const roleName = msg.role === 'assistant' ? 'IBGenie' : 'User';
+        const formattedContent = msg.content.replace(/\n/g, '<br>');
+        content += `<div><p><strong>${roleName}:</strong></p><p>${formattedContent}</p><br></div>`;
+    });
+
+    const source = header + content + footer;
+    const fileDownloadUrl = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(source);
+    
+    const downloadLink = document.createElement("a");
+    document.body.appendChild(downloadLink);
+    
+    downloadLink.href = fileDownloadUrl;
+    downloadLink.download = 'ib-genie-chat.doc';
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+  };
+
+
   const capitalizedRole = role.charAt(0).toUpperCase() + role.slice(1);
   const identityText = `IB Genie ${capitalizedRole} Edition`;
 
@@ -165,14 +217,19 @@ export default function ChatInterface({
               </h1>
             </div>
             <div className="ml-auto flex items-center gap-2">
+               <Button variant="outline" size="sm" onClick={handleCopy}>
+                <Copy className="mr-2 h-4 w-4" /> Copy
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
-                    <Wand2 className="mr-2 h-4 w-4" /> Tools
+                    <FileDown className="mr-2 h-4 w-4" /> Export
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <RubricFeedbackTool isDropdownItem={true} />
+                  <DropdownMenuItem onClick={handleExportWord}>
+                    Word Document (.doc)
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               <Button variant="outline" size="sm" onClick={handleReset}>
