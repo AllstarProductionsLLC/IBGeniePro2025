@@ -26,5 +26,13 @@ export default function Home() {
     );
   }
 
-  return <ChatInterface role={role} program={program} onReset={handleReset} />;
+  return (
+    <ChatInterface
+      role={role}
+      program={program}
+      setRole={setRole}
+      setProgram={setProgram}
+      onReset={handleReset}
+    />
+  );
 }
