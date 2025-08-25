@@ -266,15 +266,96 @@ export default function ChatInterface({
     const blob = new Blob([plainText], { type: 'text/plain' });
     downloadFile(blob, 'ib-genie-chat.txt');
   };
-
-  const handleExportCsv = () => {
-    const csvData = messages.map(msg => ({
-      Role: msg.role === 'assistant' ? 'IBGenie' : 'User',
-      Content: msg.content
-    }));
-    const csv = Papa.unparse(csvData);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    downloadFile(blob, 'ib-genie-chat.csv');
+  
+  const handleExportPpt = () => {
+    const titleSlide = `
+      <div style="text-align:center; font-family:Arial, sans-serif; color:#333;">
+        <h1>IBGenie Chat Export</h1>
+        <p>Exported on: ${new Date().toLocaleDateString()}</p>
+      </div>
+    `;
+  
+    const slides = messages.map(msg => {
+      const speaker = msg.role === 'assistant' ? 'IBGenie' : 'User';
+      const renderedContent = renderToString(<ReactMarkdown>{msg.content}</ReactMarkdown>);
+      return `
+        <div style="font-family:Arial, sans-serif; color:#333;">
+          <h2 style="color:#007bff;">${speaker}</h2>
+          ${renderedContent}
+        </div>
+      `;
+    });
+  
+    const finalSlides = [titleSlide, ...slides];
+  
+    // MHTML (MIME HTML) structure to create a multi-page/multi-slide document
+    let htmlString = `
+      <html xmlns:v="urn:schemas-microsoft-com:vml"
+      xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:p="urn:schemas-microsoft-com:office:powerpoint"
+      xmlns:m="http://schemas.microsoft.com/office/2004/12/omml"
+      xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta http-equiv=Content-Type content="text/html; charset=utf-8">
+        <meta name=ProgId content=PowerPoint.Slide>
+        <meta name=Generator content="Microsoft PowerPoint 15">
+        <link rel=File-List href="filelist.xml">
+        <title>IBGenie Chat Export</title>
+        <style>
+          <!--
+          .slide {
+            page-break-after: always;
+            width: 960px; /* 4:3 aspect ratio */
+            height: 720px;
+            padding: 40px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+            background: #fff;
+          }
+          -->
+        </style>
+        <xml>
+          <o:DocumentProperties>
+            <o:Author>IBGenie</o:Author>
+            <o:LastAuthor>IBGenie</o:LastAuthor>
+            <o:Revision>1</o:Revision>
+            <o:TotalTime>0</o:TotalTime>
+            <o:Created>${new Date().toISOString()}</o:Created>
+            <o:LastSaved>${new Date().toISOString()}</o:LastSaved>
+            <o:Pages>${finalSlides.length}</o:Pages>
+            <o:Slides>${finalSlides.length}</o:Slides>
+            <o:Version>16.00</o:Version>
+          </o:DocumentProperties>
+          <p:Presentation>
+            <p:View>1</p:View>
+            <p:SlideMaster>
+              <p:SlideLayouts>
+                <p:SlideLayout p:Type="title"/>
+                <p:SlideLayout p:Type="blank"/>
+              </p:SlideLayouts>
+            </p:SlideMaster>
+          </p:Presentation>
+        </xml>
+      </head>
+      <body>
+        <div style="width:100%; height:100%;">
+          ${finalSlides.map((slideHtml, index) => `
+            <div class="slide" style="mso-wrap-style:none;">
+              <div style="mso-element:slide-master-id 1;mso-element:slide-id ${512 + index};mso-element:frame;mso-element-wrap-style:none;mso-element-left:0;mso-element-top:0;mso-element-width:100%;mso-element-height:100%;">
+                <div style="padding:40px;">
+                  ${slideHtml}
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </body>
+      </html>
+    `;
+  
+    const blob = new Blob([htmlString], { type: 'application/vnd.ms-powerpoint' });
+    downloadFile(blob, 'ib-genie-chat.ppt');
   };
 
   const handleExportPdf = () => {
@@ -315,7 +396,7 @@ export default function ChatInterface({
       <SidebarInset>
         <div className="flex h-screen w-full flex-col bg-background">
           <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm sm:h-16 sm:px-6">
-            <SidebarTrigger />
+            <SidebarTrigger className="flex md:hidden" />
             <div className="flex flex-1 items-center gap-2 min-w-0">
               <IbGenieLogo className="h-7 w-7 text-primary flex-shrink-0" />
               <h1 className="text-lg font-semibold tracking-tight md:text-xl font-headline whitespace-nowrap overflow-hidden text-ellipsis">
@@ -339,8 +420,8 @@ export default function ChatInterface({
                    <DropdownMenuItem onClick={handleExportTxt}>
                     Plain Text (.txt)
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleExportCsv}>
-                    Spreadsheet (.csv)
+                  <DropdownMenuItem onClick={handleExportPpt}>
+                    PowerPoint (.ppt)
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleExportPdf}>
                     PDF

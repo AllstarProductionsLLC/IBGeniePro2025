@@ -255,7 +255,7 @@ const Sidebar = React.forwardRef<
           >
             {children}
           </div>
-          <SidebarRail onClick={toggleSidebar}/>
+          <SidebarRail/>
         </div>
       </div>
     )
