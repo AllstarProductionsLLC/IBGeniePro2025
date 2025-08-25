@@ -157,7 +157,7 @@ export default function ChatInterface({
       <SidebarInset>
         <div className="flex h-screen w-full flex-col bg-background">
           <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm sm:h-16 sm:px-6">
-            <SidebarTrigger className="md:hidden" />
+            <SidebarTrigger />
             <div className="flex flex-1 items-center gap-2 min-w-0">
               <IbGenieLogo className="h-7 w-7 text-primary flex-shrink-0" />
               <h1 className="text-lg font-semibold tracking-tight md:text-xl font-headline whitespace-nowrap overflow-hidden text-ellipsis">
