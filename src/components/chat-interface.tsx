@@ -277,42 +277,6 @@ export default function ChatInterface({
     downloadFile(blob, 'ib-genie-chat.csv');
   };
 
-  const handleExportPpt = () => {
-    const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:p='urn:schemas-microsoft-com:office:powerpoint' xmlns='http://www.w3.org/TR/REC-html40'>
-      <head>
-        <meta charset='utf-8'>
-        <title>Chat Export</title>
-        <style>
-          .slide {
-            border:1px solid black;
-            padding: 1em;
-            margin-bottom: 1em;
-            page-break-after: always;
-            height: 90vh;
-          }
-        </style>
-      </head>
-      <body>`;
-    const footer = `</body></html>`;
-    
-    let content = "";
-    messages.forEach(msg => {
-      const roleName = msg.role === 'assistant' ? 'IBGenie' : 'User';
-      const formattedContent = renderToString(<ReactMarkdown>{msg.content}</ReactMarkdown>);
-      content += `
-        <div class='slide'>
-          <h1>${roleName}</h1>
-          <div>${formattedContent}</div>
-        </div>
-      `;
-    });
-    
-    const source = header + content + footer;
-    const blob = new Blob([source], { type: 'application/vnd.ms-powerpoint' });
-    downloadFile(blob, 'ib-genie-chat.ppt');
-  };
-
-
   const handleExportPdf = () => {
     const htmlContent = getHtmlChat();
     const printWindow = window.open('', '_blank');
@@ -375,8 +339,8 @@ export default function ChatInterface({
                    <DropdownMenuItem onClick={handleExportTxt}>
                     Plain Text (.txt)
                   </DropdownMenuItem>
-                   <DropdownMenuItem onClick={handleExportPpt}>
-                    PowerPoint (.ppt)
+                  <DropdownMenuItem onClick={handleExportCsv}>
+                    Spreadsheet (.csv)
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleExportPdf}>
                     PDF
