@@ -5,18 +5,26 @@ import { prompts } from "@/lib/prompts";
 import type { Role, Program } from "@/app/page";
 import { ScrollArea } from "./ui/scroll-area";
 import { Button } from "./ui/button";
-import { Lightbulb, BookOpen, FlaskConical } from "lucide-react";
+import { Lightbulb, BookOpen, FlaskConical, ChevronDown } from "lucide-react";
 import { RubricFeedbackTool } from "./rubric-feedback-tool";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuGroup
 } from "./ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+
 
 interface PromptLibraryProps {
   role: Role;
   program: Program;
   setInput: (input: string) => void;
+  setRole: (role: Role) => void;
+  setProgram: (program: Program) => void;
 }
 
 const icons: { [key: string]: React.ReactNode } = {
@@ -26,21 +34,59 @@ const icons: { [key: string]: React.ReactNode } = {
   dp: <Lightbulb className="mr-2 h-4 w-4" />,
 };
 
-export function PromptLibrary({ role, program, setInput }: PromptLibraryProps) {
+export function PromptLibrary({ role, program, setInput, setRole, setProgram }: PromptLibraryProps) {
   const rolePrompts = prompts[role];
   const programPrompts = rolePrompts[program];
 
   const handlePromptClick = (prompt: string) => {
     setInput(prompt);
   };
+  
+  const roleDisplay: Record<Role, string> = {
+    student: "Student",
+    teacher: "Teacher",
+  }
+
+  const programDisplay: Record<Program, string> = {
+    pyp: "PYP",
+    myp: "MYP",
+    dp: "DP",
+  }
+
+  const allRoles: Role[] = ["student", "teacher"];
+  const allPrograms: Program[] = ["pyp", "myp", "dp"];
 
   return (
     <div className="flex h-full flex-col">
       <div className="p-2">
         <h2 className="px-2 text-lg font-semibold tracking-tight font-headline">Prompt Starters</h2>
-        <p className="px-2 text-sm text-muted-foreground">
-          For {program.toUpperCase()} {role}s
-        </p>
+         <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="px-2 text-muted-foreground w-full justify-start -ml-1">
+                    For {program.toUpperCase()} {role}s
+                    <ChevronDown className="ml-auto h-4 w-4" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="start">
+                <DropdownMenuLabel>Student</DropdownMenuLabel>
+                <DropdownMenuGroup>
+                    {allPrograms.map(p => (
+                        <DropdownMenuItem key={`student-${p}`} onClick={() => { setRole('student'); setProgram(p);}}>
+                            For {programDisplay[p]} Students
+                        </DropdownMenuItem>
+                    ))}
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                 <DropdownMenuLabel>Teacher</DropdownMenuLabel>
+                 <DropdownMenuGroup>
+                    {allPrograms.map(p => (
+                        <DropdownMenuItem key={`teacher-${p}`} onClick={() => { setRole('teacher'); setProgram(p);}}>
+                            For {programDisplay[p]} Teachers
+                        </DropdownMenuItem>
+                    ))}
+                </DropdownMenuGroup>
+            </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       <ScrollArea className="flex-1">
         <div className="space-y-4 p-2">

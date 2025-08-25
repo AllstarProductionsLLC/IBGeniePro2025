@@ -20,6 +20,7 @@ import {
   X,
   Copy,
   FileDown,
+  Wand2,
 } from "lucide-react";
 import type { Role, Program } from "@/app/page";
 import { IbGenieLogo } from "./ib-genie-logo";
@@ -36,20 +37,27 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "./ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { renderToString } from 'react-dom/server';
-
+import { RubricFeedbackTool } from "./rubric-feedback-tool";
+import { saveAs } from 'file-saver';
+import PptxGenJS from 'pptxgenjs';
 
 interface ChatInterfaceProps {
   role: Role;
   program: Program;
+  setRole: (role: Role) => void;
+  setProgram: (program: Program) => void;
   onReset: () => void;
 }
 
 export default function ChatInterface({
   role,
   program,
+  setRole,
+  setProgram,
   onReset,
 }: ChatInterfaceProps) {
   const isMobile = useIsMobile();
@@ -240,10 +248,12 @@ export default function ChatInterface({
   }
   
   const handleExportWord = () => {
-    const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Chat Export</title></head><body>";
+    const MimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Chat Export</title></head><body>`;
     const footer = "</body></html>";
     const htmlContent = renderToString(
        <div>
+        <h1>IBGenie Chat Export</h1>
         {messages.map((msg, index) => (
           <div key={index} style={{ marginBottom: '16px' }}>
             <p style={{ fontWeight: 'bold' }}>
@@ -255,13 +265,13 @@ export default function ChatInterface({
       </div>
     );
     const source = header + htmlContent + footer;
-    const blob = new Blob([source], { type: 'application/vnd.ms-word' });
+    const blob = new Blob([source], { type: MimeType });
     downloadFile(blob, 'ib-genie-chat.doc');
   };
 
   const handleExportTxt = () => {
     const plainText = getPlainTextChat();
-    const blob = new Blob([plainText], { type: 'text/plain' });
+    const blob = new Blob([plainText], { type: 'text/plain;charset=utf-8' });
     downloadFile(blob, 'ib-genie-chat.txt');
   };
   
@@ -296,6 +306,8 @@ export default function ChatInterface({
           <PromptLibrary
             role={role}
             program={program}
+            setRole={setRole}
+            setProgram={setProgram}
             setInput={setInput}
           />
         </SidebarContent>
