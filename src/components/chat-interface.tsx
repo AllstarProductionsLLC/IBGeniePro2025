@@ -21,6 +21,8 @@ import {
   Copy,
   FileDown,
   Wand2,
+  Save,
+  MoreVertical,
 } from "lucide-react";
 import type { Role, Program } from "@/app/page";
 import { IbGenieLogo } from "./ib-genie-logo";
@@ -43,7 +45,6 @@ import { useToast } from "@/hooks/use-toast";
 import { renderToString } from 'react-dom/server';
 import { RubricFeedbackTool } from "./rubric-feedback-tool";
 import { saveAs } from 'file-saver';
-import PptxGenJS from 'pptxgenjs';
 
 interface ChatInterfaceProps {
   role: Role;
@@ -347,9 +348,21 @@ export default function ChatInterface({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button variant="outline" size="sm" onClick={handleReset}>
-                <Trash2 className="mr-2 h-4 w-4" /> New Session
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                   <Button variant="outline" size="sm">
+                    <MoreVertical className="mr-2 h-4 w-4" /> Chat Options
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                   <DropdownMenuItem onClick={handleReset}>
+                     <Trash2 className="mr-2 h-4 w-4" /> New Chat
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportTxt}>
+                    <Save className="mr-2 h-4 w-4" /> Save Chat
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </header>
 
@@ -443,7 +456,7 @@ function ChatMessage({ role, content }: { role: string; content: string }) {
     >
       <Avatar>
         <AvatarFallback>
-          {isAssistant ? <IbGenieLogo className="h-6 w-6" /> : <CircleUser />}
+          {isAssistant ? <IbGenieLogo className="h-6 w-6 text-primary" /> : <CircleUser />}
         </AvatarFallback>
       </Avatar>
       <div
@@ -473,7 +486,7 @@ function Thinking() {
     <div className="flex items-start gap-4">
       <Avatar>
         <AvatarFallback>
-          <IbGenieLogo className="h-6 w-6" />
+          <IbGenieLogo className="h-6 w-6 text-primary" />
         </AvatarFallback>
       </Avatar>
       <div className="max-w-[75%] rounded-lg p-3 text-sm bg-muted">
