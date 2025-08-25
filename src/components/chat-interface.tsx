@@ -40,6 +40,7 @@ import {
 } from "./ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { renderToString } from 'react-dom/server';
+import Papa from "papaparse";
 
 
 interface ChatInterfaceProps {
@@ -192,29 +193,121 @@ export default function ChatInterface({
       }
     );
   };
+
+  const getPlainTextChat = () => {
+    return messages
+      .map(
+        (msg) =>
+          `${msg.role === 'assistant' ? 'IBGenie' : 'User'}:\n${msg.content}`
+      )
+      .join('\n\n');
+  };
+
+  const getHtmlChat = () => {
+    return renderToString(
+      <html>
+        <head>
+          <title>IBGenie Chat Export</title>
+          <style>
+            {'body { font-family: sans-serif; } .message { margin-bottom: 16px; } .role { font-weight: bold; }'}
+          </style>
+        </head>
+        <body>
+          {messages.map((msg, index) => (
+            <div key={index} className="message">
+              <p className="role">
+                {msg.role === 'assistant' ? 'IBGenie' : 'User'}:
+              </p>
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: renderToString(<ReactMarkdown>{msg.content}</ReactMarkdown>),
+                }}
+              />
+            </div>
+          ))}
+        </body>
+      </html>
+    );
+  };
+
+  const downloadFile = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
   
   const handleExportWord = () => {
     const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Chat Export</title></head><body>";
     const footer = "</body></html>";
-    let content = "";
-    messages.forEach(msg => {
-        const roleName = msg.role === 'assistant' ? 'IBGenie' : 'User';
-        const formattedContent = renderToString(<ReactMarkdown>{msg.content}</ReactMarkdown>);
-        content += `<div><p><strong>${roleName}:</strong></p>${formattedContent}<br></div>`;
-    });
-
-    const source = header + content + footer;
-    const fileDownloadUrl = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(source);
-    
-    const downloadLink = document.createElement("a");
-    document.body.appendChild(downloadLink);
-    
-    downloadLink.href = fileDownloadUrl;
-    downloadLink.download = 'ib-genie-chat.doc';
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
+    const htmlContent = renderToString(
+       <div>
+        {messages.map((msg, index) => (
+          <div key={index} style={{ marginBottom: '16px' }}>
+            <p style={{ fontWeight: 'bold' }}>
+              {msg.role === 'assistant' ? 'IBGenie' : 'User'}:
+            </p>
+             <div dangerouslySetInnerHTML={{ __html: renderToString(<ReactMarkdown>{msg.content}</ReactMarkdown>)}} />
+          </div>
+        ))}
+      </div>
+    );
+    const source = header + htmlContent + footer;
+    const blob = new Blob([source], { type: 'application/vnd.ms-word' });
+    downloadFile(blob, 'ib-genie-chat.doc');
   };
 
+  const handleExportTxt = () => {
+    const plainText = getPlainTextChat();
+    const blob = new Blob([plainText], { type: 'text/plain' });
+    downloadFile(blob, 'ib-genie-chat.txt');
+  };
+
+  const handleExportCsv = () => {
+    const csvData = messages.map(msg => ({
+      Role: msg.role === 'assistant' ? 'IBGenie' : 'User',
+      Content: msg.content
+    }));
+    const csv = Papa.unparse(csvData);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    downloadFile(blob, 'ib-genie-chat.csv');
+  };
+
+  const handleExportPpt = () => {
+    const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:p='urn:schemas-microsoft-com:office:powerpoint' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Chat Export</title></head><body><div class='slide'>`;
+    const footer = `</div></body></html>`;
+    let content = "";
+    messages.forEach(msg => {
+      const roleName = msg.role === 'assistant' ? 'IBGenie' : 'User';
+      const formattedContent = renderToString(<ReactMarkdown>{msg.content}</ReactMarkdown>).replace(/"/g, "'");
+      content += `<div class='slide' style='border:1px solid black; padding: 1em; margin-bottom: 1em;'><p><strong>${roleName}:</strong></p><div>${formattedContent}</div></div>`;
+    });
+    
+    const source = header + content + footer;
+    const blob = new Blob([source], { type: 'application/vnd.ms-powerpoint' });
+    downloadFile(blob, 'ib-genie-chat.ppt');
+  };
+
+  const handleExportPdf = () => {
+    const htmlContent = getHtmlChat();
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Export Failed",
+            description: "Could not open print window. Please disable your pop-up blocker.",
+        });
+    }
+  };
 
   const capitalizedRole = role.charAt(0).toUpperCase() + role.slice(1);
   const identityText = `IB Genie ${capitalizedRole} Edition`;
@@ -257,6 +350,18 @@ export default function ChatInterface({
                 <DropdownMenuContent>
                   <DropdownMenuItem onClick={handleExportWord}>
                     Word Document (.doc)
+                  </DropdownMenuItem>
+                   <DropdownMenuItem onClick={handleExportTxt}>
+                    Plain Text (.txt)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportCsv}>
+                    Excel/CSV (.csv)
+                  </DropdownMenuItem>
+                   <DropdownMenuItem onClick={handleExportPpt}>
+                    PowerPoint (.ppt)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportPdf}>
+                    PDF
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
