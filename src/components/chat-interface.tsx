@@ -39,6 +39,7 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { renderToString } from 'react-dom/server';
 
 
 interface ChatInterfaceProps {
@@ -141,21 +142,48 @@ export default function ChatInterface({
   };
 
   const handleCopy = () => {
-    const chatText = messages
+    // Plain text version
+    const plainText = messages
       .map(
         (msg) =>
-          `${msg.role === "assistant" ? "IBGenie" : "User"}:\n${msg.content}`
+          `${msg.role === 'assistant' ? 'IBGenie' : 'User'}:\n${msg.content}`
       )
-      .join("\n\n");
+      .join('\n\n');
 
-    navigator.clipboard.writeText(chatText).then(
+    // HTML version
+    const htmlString = renderToString(
+      <div>
+        {messages.map((msg, index) => (
+          <div key={index} style={{ marginBottom: '16px' }}>
+            <p style={{ fontWeight: 'bold' }}>
+              {msg.role === 'assistant' ? 'IBGenie' : 'User'}:
+            </p>
+            <div
+              dangerouslySetInnerHTML={{
+                __html: renderToString(<ReactMarkdown>{msg.content}</ReactMarkdown>),
+              }}
+            />
+          </div>
+        ))}
+      </div>
+    );
+  
+    const blobHtml = new Blob([htmlString], { type: 'text/html' });
+    const blobText = new Blob([plainText], { type: 'text/plain' });
+    const clipboardItem = new ClipboardItem({
+        'text/html': blobHtml,
+        'text/plain': blobText,
+    });
+
+    navigator.clipboard.write([clipboardItem]).then(
       () => {
         toast({
           title: "Copied!",
           description: "Chat copied to clipboard.",
         });
       },
-      () => {
+      (err) => {
+        console.error("Failed to copy: ", err);
         toast({
           variant: "destructive",
           title: "Copy Failed",
@@ -171,8 +199,8 @@ export default function ChatInterface({
     let content = "";
     messages.forEach(msg => {
         const roleName = msg.role === 'assistant' ? 'IBGenie' : 'User';
-        const formattedContent = msg.content.replace(/\n/g, '<br>');
-        content += `<div><p><strong>${roleName}:</strong></p><p>${formattedContent}</p><br></div>`;
+        const formattedContent = renderToString(<ReactMarkdown>{msg.content}</ReactMarkdown>);
+        content += `<div><p><strong>${roleName}:</strong></p>${formattedContent}<br></div>`;
     });
 
     const source = header + content + footer;
