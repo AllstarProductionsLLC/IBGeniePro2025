@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import {
-  Bot,
   CircleUser,
   FileUp,
   PanelLeft,
@@ -432,7 +431,7 @@ function ChatMessage({ role, content }: { role: string; content: string }) {
     >
       <Avatar>
         <AvatarFallback>
-          {isAssistant ? <Bot /> : <CircleUser />}
+          {isAssistant ? <IbGenieLogo className="h-6 w-6" /> : <CircleUser />}
         </AvatarFallback>
       </Avatar>
       <div
@@ -462,7 +461,7 @@ function Thinking() {
     <div className="flex items-start gap-4">
       <Avatar>
         <AvatarFallback>
-          <Bot />
+          <IbGenieLogo className="h-6 w-6" />
         </AvatarFallback>
       </Avatar>
       <div className="max-w-[75%] rounded-lg p-3 text-sm bg-muted">
