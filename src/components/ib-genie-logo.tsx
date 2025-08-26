@@ -1,3 +1,4 @@
+
 import type { SVGProps } from "react";
 
 export function IbGenieLogo(props: SVGProps<SVGSVGElement>) {
@@ -16,9 +17,8 @@ export function IbGenieLogo(props: SVGProps<SVGSVGElement>) {
     >
       <defs>
         <linearGradient id="sparkle-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style={{ stopColor: '#8A2BE2' }} /> 
-          <stop offset="50%" style={{ stopColor: '#4169E1' }} />
-          <stop offset="100%" style={{ stopColor: '#00BFFF' }} />
+          <stop offset="0%" style={{ stopColor: 'hsl(var(--primary))' }} /> 
+          <stop offset="100%" style={{ stopColor: 'hsl(var(--accent))' }} />
         </linearGradient>
       </defs>
       <title>IBGenie Logo</title>

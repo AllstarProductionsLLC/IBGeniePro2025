@@ -24,8 +24,7 @@ interface PromptLibraryProps {
   role: Role;
   program: Program;
   setInput: (input: string) => void;
-  setRole: (role: Role) => void;
-  setProgram: (program: Program) => void;
+  onNewChat: (role: Role, program: Program) => void;
 }
 
 const icons: { [key: string]: React.ReactNode } = {
@@ -35,7 +34,7 @@ const icons: { [key: string]: React.ReactNode } = {
   dp: <Lightbulb className="mr-2 h-4 w-4" />,
 };
 
-export function PromptLibrary({ role, program, setInput, setRole, setProgram }: PromptLibraryProps) {
+export function PromptLibrary({ role, program, setInput, onNewChat }: PromptLibraryProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const rolePrompts = prompts[role];
   const programPrompts = rolePrompts[program];
@@ -70,11 +69,10 @@ export function PromptLibrary({ role, program, setInput, setRole, setProgram }: 
   return (
     <div className="flex h-full flex-col">
       <div className="p-2">
-        <h2 className="px-2 text-lg font-semibold tracking-tight font-headline">Prompt Starters</h2>
          <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="px-2 text-muted-foreground w-full justify-start -ml-1">
-                    For {program.toUpperCase()} {role}s
+                    For {program.toUpperCase()} {roleDisplay[role]}s
                     <ChevronDown className="ml-auto h-4 w-4" />
                 </Button>
             </DropdownMenuTrigger>
@@ -82,7 +80,7 @@ export function PromptLibrary({ role, program, setInput, setRole, setProgram }: 
                 <DropdownMenuLabel>Student</DropdownMenuLabel>
                 <DropdownMenuGroup>
                     {allPrograms.map(p => (
-                        <DropdownMenuItem key={`student-${p}`} onClick={() => { setRole('student'); setProgram(p);}}>
+                        <DropdownMenuItem key={`student-${p}`} onClick={() => onNewChat('student', p)}>
                             For {programDisplay[p]} Students
                         </DropdownMenuItem>
                     ))}
@@ -91,7 +89,7 @@ export function PromptLibrary({ role, program, setInput, setRole, setProgram }: 
                  <DropdownMenuLabel>Teacher</DropdownMenuLabel>
                  <DropdownMenuGroup>
                     {allPrograms.map(p => (
-                        <DropdownMenuItem key={`teacher-${p}`} onClick={() => { setRole('teacher'); setProgram(p);}}>
+                        <DropdownMenuItem key={`teacher-${p}`} onClick={() => onNewChat('teacher', p)}>
                             For {programDisplay[p]} Teachers
                         </DropdownMenuItem>
                     ))}

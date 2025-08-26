@@ -116,7 +116,12 @@ export function RubricFeedbackTool({ isDropdownItem = false }: RubricFeedbackToo
         <TriggerComponent 
             variant={isDropdownItem ? undefined : "ghost"}
             className={isDropdownItem ? "" : "w-full justify-start text-left h-auto"}
-            onSelect={isDropdownItem ? (e) => e.preventDefault() : undefined}
+            onSelect={(e) => {
+                if (isDropdownItem) {
+                    e.preventDefault();
+                    setIsOpen(true);
+                }
+            }}
         >
           <Wand2 className="mr-2 h-4 w-4" /> Formative Feedback
         </TriggerComponent>
