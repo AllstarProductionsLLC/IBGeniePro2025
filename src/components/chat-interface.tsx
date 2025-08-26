@@ -30,6 +30,7 @@ import {
   MessageSquare,
   Sparkles,
   Home,
+  Edit,
 } from "lucide-react";
 import type { Role, Program } from "@/app/page";
 import { IbGenieLogo } from "./ib-genie-logo";
@@ -51,6 +52,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { renderToString } from 'react-dom/server';
 import { v4 as uuidv4 } from 'uuid';
+import { Input } from "./ui/input";
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -93,12 +95,22 @@ export default function ChatInterface({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const dragCounter = useRef(0);
   const { toast } = useToast();
+  
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleRenameValue, setTitleRenameValue] = useState("");
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   const activeSession = chatHistory.find(s => s.id === activeSessionId);
   const role = activeSession?.role || initialRole;
   const program = activeSession?.program || initialProgram;
   const messages = activeSession?.messages || [];
   const personality = personalities[role][program];
+  
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+    }
+  }, [isEditingTitle]);
 
   // Load from LocalStorage
   useEffect(() => {
@@ -190,6 +202,28 @@ export default function ChatInterface({
         session.id === sessionId ? { ...session, title: newTitle } : session
       ));
   };
+  
+  const handleStartTitleEdit = () => {
+    if (activeSession) {
+      setIsEditingTitle(true);
+      setTitleRenameValue(activeSession.title);
+    }
+  }
+
+  const handleRenameTitle = () => {
+    if (activeSessionId && titleRenameValue.trim()) {
+      handleRenameChat(activeSessionId, titleRenameValue.trim());
+    }
+    setIsEditingTitle(false);
+  }
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleRenameTitle();
+    } else if (e.key === 'Escape') {
+      setIsEditingTitle(false);
+    }
+  }
 
   const handleFileSelect = (selectedFile: File) => {
     if (selectedFile) {
@@ -461,6 +495,36 @@ export default function ChatInterface({
   
   const capitalizedRole = role.charAt(0).toUpperCase() + role.slice(1);
   const identityText = `IB Genie ${capitalizedRole} Edition`;
+  
+  const renderHeaderTitle = () => {
+    if (isMobile) {
+      return (
+        <h1 className="text-lg font-semibold tracking-tight md:text-xl font-headline whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer" onClick={onParentReset}>
+          IBGenie
+        </h1>
+      );
+    }
+    if (isEditingTitle) {
+      return (
+        <Input
+          ref={titleInputRef}
+          value={titleRenameValue}
+          onChange={(e) => setTitleRenameValue(e.target.value)}
+          onBlur={handleRenameTitle}
+          onKeyDown={handleTitleKeyDown}
+          className="h-8 text-lg font-semibold tracking-tight md:text-xl font-headline"
+        />
+      );
+    }
+    return (
+      <div className="flex items-center gap-2 group/title" onClick={handleStartTitleEdit}>
+        <h1 className="text-lg font-semibold tracking-tight md:text-xl font-headline whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer">
+          {activeSession?.title || identityText}
+        </h1>
+        <Edit className="h-4 w-4 text-muted-foreground opacity-0 group-hover/title:opacity-100 transition-opacity" />
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>
@@ -523,9 +587,7 @@ export default function ChatInterface({
                  <SidebarTrigger className="hidden md:flex" />
                  <IbGenieLogo className="h-7 w-7 text-primary flex-shrink-0" />
               </div>
-              <h1 className="text-lg font-semibold tracking-tight md:text-xl font-headline whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer" onClick={onParentReset}>
-                {isMobile ? "IBGenie" : (activeSession?.title || identityText)}
-              </h1>
+              {renderHeaderTitle()}
             </div>
             <div className="ml-auto flex items-center gap-2">
               <Button variant="outline" size="icon" onClick={onParentReset}>
@@ -745,3 +807,5 @@ function ThinkingIndicator() {
     </div>
   );
 }
+
+    
