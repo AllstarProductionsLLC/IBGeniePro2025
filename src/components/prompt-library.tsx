@@ -70,11 +70,10 @@ export function PromptLibrary({ role, program, setInput, setRole, setProgram }: 
   return (
     <div className="flex h-full flex-col">
       <div className="p-2">
-        <h2 className="px-2 text-lg font-semibold tracking-tight font-headline">Prompt Starters</h2>
          <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="px-2 text-muted-foreground w-full justify-start -ml-1">
-                    For {program.toUpperCase()} {role}s
+                    For {program.toUpperCase()} {roleDisplay[role]}s
                     <ChevronDown className="ml-auto h-4 w-4" />
                 </Button>
             </DropdownMenuTrigger>
