@@ -145,22 +145,6 @@ export default function ChatInterface({
      ));
   };
 
-  const setRole = (newRole: Role) => {
-    if (!activeSession) return;
-    setChatHistory(prev => prev.map(session => 
-        session.id === activeSessionId ? { ...session, role: newRole } : session
-     ));
-    setParentRole(newRole);
-  }
-
-  const setProgram = (newProgram: Program) => {
-    if (!activeSession) return;
-    setChatHistory(prev => prev.map(session => 
-        session.id === activeSessionId ? { ...session, program: newProgram } : session
-     ));
-    setParentProgram(newProgram);
-  }
-
   const handleNewChat = (role: Role, program: Program) => {
     const welcomeMessage = personalities[role][program].welcomeMessage;
     const newSession: ChatSession = {
@@ -173,6 +157,8 @@ export default function ChatInterface({
     };
     setChatHistory(prev => [newSession, ...prev]);
     setActiveSessionId(newSession.id);
+    setParentRole(role);
+    setParentProgram(program);
   };
   
   const handleDeleteChat = (sessionId: string) => {
@@ -491,8 +477,7 @@ export default function ChatInterface({
             <PromptLibrary
               role={role}
               program={program}
-              setRole={setRole}
-              setProgram={setProgram}
+              onNewChat={handleNewChat}
               setInput={setInput}
             />
           ) : (
@@ -686,7 +671,7 @@ function ChatMessage({ role, content }: { role: 'user' | 'assistant'; content: s
       <Avatar>
         <AvatarFallback>
           {isAssistant ? (
-            <Sparkles className="h-6 w-6 text-primary" />
+            <IbGenieLogo className="h-6 w-6" />
           ) : (
             <CircleUser />
           )}
