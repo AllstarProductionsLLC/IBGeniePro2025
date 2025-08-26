@@ -120,7 +120,7 @@ export default function ChatInterface({
       handleNewChat(initialRole, initialProgram);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialRole, initialProgram]);
+  }, []);
   
   // Save to LocalStorage
   useEffect(() => {
@@ -136,6 +136,9 @@ export default function ChatInterface({
             description: "Could not save chat history. Your browser might be out of space.",
         });
       }
+    } else {
+        // If history is empty, remove it from local storage
+        localStorage.removeItem("ibGenieChatHistory");
     }
   }, [chatHistory, toast]);
 
@@ -162,16 +165,30 @@ export default function ChatInterface({
   };
   
   const handleDeleteChat = (sessionId: string) => {
-    setChatHistory(prev => prev.filter(session => session.id !== sessionId));
-    if (activeSessionId === sessionId) {
-        const nextSession = chatHistory.filter(s => s.id !== sessionId)[0];
-        if (nextSession) {
-            setActiveSessionId(nextSession.id);
-        } else {
+    setChatHistory(prev => {
+        const updatedHistory = prev.filter(session => session.id !== sessionId);
+        if (activeSessionId === sessionId) {
+            const nextSession = updatedHistory.sort((a,b) => b.createdAt - a.createdAt)[0];
+            if (nextSession) {
+                setActiveSessionId(nextSession.id);
+            } else {
+                // If no sessions are left, create a new one
+                handleNewChat(initialRole, initialProgram);
+            }
+        }
+        // If all chats are deleted, create a new one.
+        if (updatedHistory.length === 0) {
             handleNewChat(initialRole, initialProgram);
         }
-    }
-  }
+        return updatedHistory;
+    });
+  };
+
+  const handleRenameChat = (sessionId: string, newTitle: string) => {
+      setChatHistory(prev => prev.map(session => 
+        session.id === sessionId ? { ...session, title: newTitle } : session
+      ));
+  };
 
   const handleFileSelect = (selectedFile: File) => {
     if (selectedFile) {
@@ -244,6 +261,7 @@ export default function ChatInterface({
 
     try {
       const history = newMessages
+        .slice(0, -1) // Exclude the latest user message
         .filter((msg) => msg.role !== 'assistant' || msg.content !== personality.welcomeMessage) // Filter out welcome message
         .map((msg) => ({
           role: msg.role === 'assistant' ? 'model' : 'user',
@@ -260,7 +278,7 @@ export default function ChatInterface({
       }
       
       // Update session title
-      if(activeSession.messages.length <= 1) { // It's a new chat
+      if(activeSession.title === "New Chat" && activeSession.messages.length <= 1) { // It's a new chat
         const title = input.split(' ').slice(0, 5).join(' ') + '...';
         setChatHistory(prev => prev.map(s => s.id === activeSessionId ? {...s, title} : s));
       }
@@ -272,7 +290,8 @@ export default function ChatInterface({
       });
 
       if (!response.ok) {
-        throw new Error("Error from server");
+        const errorData = await response.json().catch(() => ({error: 'Unknown server error'}));
+        throw new Error(errorData.error || "Error from server");
       }
 
       const { message } = await response.json();
@@ -286,7 +305,7 @@ export default function ChatInterface({
         ...newMessages,
         {
           role: "assistant",
-          content: "Error: Failed to get response from AI.",
+          content: `Error: ${error instanceof Error ? error.message : 'Failed to get response from AI.'}`,
         },
       ]);
     } finally {
@@ -416,9 +435,10 @@ export default function ChatInterface({
   };
 
   const handleExportTxt = () => {
+    if (!activeSession) return;
     const plainText = getPlainTextChat();
     const blob = new Blob([plainText], { type: 'text/plain;charset=utf-8' });
-    downloadFile(blob, 'ib-genie-chat.txt');
+    downloadFile(blob, `${activeSession.title.replace(/ /g, '_')}.txt`);
   };
   
   const handleExportPdf = () => {
@@ -437,7 +457,7 @@ export default function ChatInterface({
         });
     }
   };
-
+  
   const capitalizedRole = role.charAt(0).toUpperCase() + role.slice(1);
   const identityText = `IB Genie ${capitalizedRole} Edition`;
 
@@ -487,6 +507,7 @@ export default function ChatInterface({
               onSelectSession={setActiveSessionId}
               onDeleteSession={handleDeleteChat}
               onNewChat={() => handleNewChat(initialRole, initialProgram)}
+              onRenameSession={handleRenameChat}
             />
           )}
 
@@ -495,7 +516,7 @@ export default function ChatInterface({
       <SidebarInset>
         <div className="flex h-screen w-full flex-col bg-background">
           <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm sm:h-16 sm:px-6">
-            <SidebarTrigger className="flex md:hidden" />
+             <SidebarTrigger className="flex md:hidden" />
             <div className="flex flex-1 items-center gap-2 min-w-0">
                <div className="flex items-center gap-2">
                  <SidebarTrigger className="hidden md:flex" />
