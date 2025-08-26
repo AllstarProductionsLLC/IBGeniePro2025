@@ -29,6 +29,7 @@ import {
   Upload,
   MessageSquare,
   Sparkles,
+  Home,
 } from "lucide-react";
 import type { Role, Program } from "@/app/page";
 import { IbGenieLogo } from "./ib-genie-logo";
@@ -518,15 +519,19 @@ export default function ChatInterface({
           <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm sm:h-16 sm:px-6">
              <SidebarTrigger className="flex md:hidden" />
             <div className="flex flex-1 items-center gap-2 min-w-0">
-               <div className="flex items-center gap-2">
+               <div className="flex items-center gap-2 cursor-pointer" onClick={onParentReset}>
                  <SidebarTrigger className="hidden md:flex" />
                  <IbGenieLogo className="h-7 w-7 text-primary flex-shrink-0" />
               </div>
-              <h1 className="text-lg font-semibold tracking-tight md:text-xl font-headline whitespace-nowrap overflow-hidden text-ellipsis">
+              <h1 className="text-lg font-semibold tracking-tight md:text-xl font-headline whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer" onClick={onParentReset}>
                 {isMobile ? "IBGenie" : (activeSession?.title || identityText)}
               </h1>
             </div>
             <div className="ml-auto flex items-center gap-2">
+              <Button variant="outline" size="icon" onClick={onParentReset}>
+                  <Home className="h-4 w-4" />
+                  <span className="sr-only">Home</span>
+              </Button>
                <Button variant="outline" size="sm" onClick={handleCopy}>
                 <Copy className="mr-2 h-4 w-4" /> Copy
               </Button>
