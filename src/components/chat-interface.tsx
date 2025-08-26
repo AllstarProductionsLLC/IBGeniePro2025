@@ -47,6 +47,11 @@ import { renderToString } from 'react-dom/server';
 import { RubricFeedbackTool } from "./rubric-feedback-tool";
 import { saveAs } from 'file-saver';
 
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 interface ChatInterfaceProps {
   role: Role;
   program: Program;
@@ -63,9 +68,7 @@ export default function ChatInterface({
   onReset,
 }: ChatInterfaceProps) {
   const isMobile = useIsMobile();
-  const [messages, setMessages] = useState<{ role: string; content: string }[]>(
-    []
-  );
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -143,16 +146,25 @@ export default function ChatInterface({
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    const newUserMessage = { role: "user", content: input };
-    setMessages((prev) => [...prev, newUserMessage]);
+    const newUserMessage: ChatMessage = { role: "user", content: input };
+    const newMessages = [...messages, newUserMessage];
+    setMessages(newMessages);
     setInput("");
     setIsLoading(true);
 
     try {
+      const history = newMessages
+        .filter((msg) => msg.role !== 'assistant' || msg.content !== personality.welcomeMessage) // Filter out welcome message
+        .map((msg) => ({
+          role: msg.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: msg.content }],
+        }));
+      
       const formData = new FormData();
       formData.append("message", input);
       formData.append("role", role);
       formData.append("program", program);
+      formData.append("history", JSON.stringify(history));
       if (file) {
         formData.append("file", file);
       }
@@ -502,7 +514,7 @@ export default function ChatInterface({
   );
 }
 
-function ChatMessage({ role, content }: { role: string; content: string }) {
+function ChatMessage({ role, content }: { role: 'user' | 'assistant'; content: string }) {
   const { toast } = useToast();
   const isAssistant = role === "assistant";
 

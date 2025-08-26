@@ -1,30 +1,19 @@
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
 import { personalities } from "@/lib/personalities";
 import type { Role, Program } from "@/app/page";
 
 const MODEL_NAME = "gemini-1.5-flash";
 
-// Helper to convert file to base64
-const fileToGenerativePart = async (file: File) => {
-  const base64EncodedDataPromise = new Promise<string>((resolve) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve((reader.result as string).split(",")[1]);
-    reader.readAsDataURL(file);
-  });
-  return {
-    inlineData: { data: await base64EncodedDataPromise, mimeType: file.type },
-  };
-};
-
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const message = formData.get("message") as string;
+  const history = formData.get("history") as string;
   const role = formData.get("role") as Role;
   const program = formData.get("program") as Program;
   const file = formData.get("file") as File | null;
 
-  if (!message || !role || !program) {
+  if (!message || !role || !program || !history) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
   
@@ -53,7 +42,9 @@ export async function POST(request: NextRequest) {
       const result = await model.generateContent([message, imagePart]);
       responseText = result.response.text();
     } else {
-      const chat = model.startChat();
+      const chat = model.startChat({
+         history: JSON.parse(history),
+      });
       const result = await chat.sendMessage(message);
       responseText = result.response.text();
     }
