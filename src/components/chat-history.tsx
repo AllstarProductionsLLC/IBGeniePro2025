@@ -5,7 +5,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ScrollArea } from "./ui/scroll-area";
 import { Button } from "./ui/button";
 import { ChatSession } from "./chat-interface";
-import { PlusCircle, Trash2, Edit } from "lucide-react";
+import { PlusCircle, Trash2, Edit, Search } from "lucide-react";
 import { Input } from "./ui/input";
 import {
     AlertDialog,
@@ -16,7 +16,6 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
 interface ChatHistoryProps {
@@ -38,6 +37,7 @@ export function ChatHistory({
 }: ChatHistoryProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -71,18 +71,33 @@ export function ChatHistory({
     onDeleteSession(sessionId);
   }
 
+  const filteredSessions = sessions.filter(session => 
+    session.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    session.messages.some(msg => msg.content.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
   return (
     <div className="flex h-full flex-col">
-       <div className="p-2">
+       <div className="p-2 space-y-2">
             <Button className="w-full" variant="outline" onClick={onNewChat}>
                 <PlusCircle className="mr-2 h-4 w-4"/>
                 New Chat
             </Button>
+            <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                    type="search"
+                    placeholder="Search history..."
+                    className="w-full rounded-lg bg-background pl-8"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
        </div>
       <ScrollArea className="flex-1">
         <div className="space-y-1 p-2">
-          {sessions.length > 0 ? (
-            sessions.map((session) => (
+          {filteredSessions.length > 0 ? (
+            filteredSessions.map((session) => (
               <div key={session.id} className="relative group">
                  {editingId === session.id ? (
                    <Input
@@ -108,17 +123,17 @@ export function ChatHistory({
                     </Button>
                  )}
                 
-                <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 flex items-center">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleStartEditing(session)}>
+                <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 flex items-center bg-transparent">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); handleStartEditing(session)}}>
                         <Edit className="h-4 w-4"/>
                     </Button>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => e.stopPropagation()}>
                                 <Trash2 className="h-4 w-4"/>
                             </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent>
+                        <AlertDialogContent onClick={e => e.stopPropagation()}>
                             <AlertDialogHeader>
                             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                             <AlertDialogDescription>
@@ -137,7 +152,7 @@ export function ChatHistory({
             ))
           ) : (
             <div className="p-4 text-center text-sm text-muted-foreground">
-              No chat history yet.
+              No matching chats found.
             </div>
           )}
         </div>
