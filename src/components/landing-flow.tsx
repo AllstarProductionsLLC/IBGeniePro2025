@@ -50,7 +50,7 @@ function RoleSelection({ onSelectRole }: { onSelectRole: (role: Role) => void })
             <CardTitle className="font-headline text-2xl">I am a Student</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">Get help with your EE, TOK, IA, and more.</p>
+            <p className="text-muted-foreground">Get help with your assignments, research, and exam preparation.</p>
           </CardContent>
         </Card>
         <Card className="transform cursor-pointer transition-transform hover:scale-105 hover:shadow-xl" onClick={() => onSelectRole("teacher")}>
@@ -59,7 +59,7 @@ function RoleSelection({ onSelectRole }: { onSelectRole: (role: Role) => void })
             <CardTitle className="font-headline text-2xl">I am a Teacher</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">Generate lesson plans, assessments, and feedback.</p>
+            <p className="text-muted-foreground">Access tools for lesson planning, assessment, and feedback.</p>
           </CardContent>
         </Card>
       </div>
