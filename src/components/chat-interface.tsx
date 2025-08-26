@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useRef, ChangeEvent } from "react";
+import { useEffect, useState, useRef, ChangeEvent, DragEvent } from "react";
 import ReactMarkdown from "react-markdown";
 import {
   Sidebar,
@@ -23,6 +23,7 @@ import {
   Wand2,
   Save,
   MoreVertical,
+  Upload,
 } from "lucide-react";
 import type { Role, Program } from "@/app/page";
 import { IbGenieLogo } from "./ib-genie-logo";
@@ -67,8 +68,10 @@ export default function ChatInterface({
   );
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const dragCounter = useRef(0);
   const { toast } = useToast();
 
   const personality = personalities[role][program];
@@ -77,15 +80,55 @@ export default function ChatInterface({
     setMessages([{ role: "assistant", content: personality.welcomeMessage }]);
   }, [role, program, personality.welcomeMessage]);
 
+  const handleFileSelect = (selectedFile: File) => {
+    if (selectedFile) {
+      setFile(selectedFile);
+      setInput(
+        `Attached file: ${selectedFile.name}. What should I do with this file?`
+      );
+    }
+  };
+
   const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = event.target.files?.[0];
     if (uploadedFile) {
-      setFile(uploadedFile);
-      setInput(
-        `Attached file: ${uploadedFile.name}. What should I do with this file?`
-      );
+      handleFileSelect(uploadedFile);
     }
     if (event.target) event.target.value = "";
+  };
+  
+  const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    dragCounter.current = 0;
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile) {
+      handleFileSelect(droppedFile);
+    }
   };
 
   const triggerFileUpload = () => fileInputRef.current?.click();
@@ -373,12 +416,26 @@ export default function ChatInterface({
                     {messages.map((message, index) => (
                       <ChatMessage key={index} {...message} />
                     ))}
-                    {isLoading && <Thinking />}
+                    {isLoading && <ThinkingIndicator />}
                   </div>
                 </div>
               </ScrollArea>
-              <div className="border-t bg-background p-4 md:p-6">
-                <div className="mx-auto max-w-4xl">
+              <div
+                className="border-t bg-background p-4 md:p-6"
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+              >
+                <div className="mx-auto max-w-4xl relative">
+                   {isDragging && (
+                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-primary bg-background/80 backdrop-blur-sm">
+                      <Upload className="h-8 w-8 text-primary" />
+                      <p className="mt-2 text-sm font-semibold text-primary">
+                        Drop file to upload
+                      </p>
+                    </div>
+                  )}
                   {file && (
                     <div className="mb-2 flex items-center justify-center">
                       <Badge variant="secondary">
@@ -408,7 +465,7 @@ export default function ChatInterface({
                       }}
                       disabled={isLoading}
                     />
-                    <div className="absolute bottom-2.5 right-3 flex items-center gap-1">
+                     <div className="absolute bottom-2.5 right-3 flex items-center gap-1">
                       <input
                         type="file"
                         ref={fileInputRef}
@@ -446,61 +503,82 @@ export default function ChatInterface({
 }
 
 function ChatMessage({ role, content }: { role: string; content: string }) {
+  const { toast } = useToast();
   const isAssistant = role === "assistant";
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(content).then(
+      () => {
+        toast({
+          title: "Copied!",
+          description: "Message copied to clipboard.",
+        });
+      },
+      (err) => {
+        console.error("Failed to copy: ", err);
+        toast({
+          variant: "destructive",
+          title: "Copy Failed",
+          description: "Could not copy to clipboard. Please try again.",
+        });
+      }
+    );
+  };
+
   return (
     <div
       className={cn(
-        "flex items-start gap-4",
+        "group flex items-start gap-4",
         !isAssistant && "flex-row-reverse"
       )}
     >
       <Avatar>
         <AvatarFallback>
-          {isAssistant ? <IbGenieLogo className="h-6 w-6 text-primary" /> : <CircleUser />}
+          {isAssistant ? (
+            <IbGenieLogo className="h-6 w-6 text-primary" />
+          ) : (
+            <CircleUser />
+          )}
         </AvatarFallback>
       </Avatar>
       <div
         className={cn(
           "max-w-[75%] rounded-lg p-3 text-sm",
-          isAssistant
-            ? "bg-muted"
-            : "bg-primary text-primary-foreground"
+          isAssistant ? "bg-muted" : "bg-primary text-primary-foreground"
         )}
       >
         <div className="prose prose-sm max-w-none">
-           <ReactMarkdown
+          <ReactMarkdown
             components={{
-              p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+              p: ({ node, ...props }) => (
+                <p className="mb-2 last:mb-0" {...props} />
+              ),
             }}
           >
             {content}
           </ReactMarkdown>
         </div>
       </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100"
+        onClick={handleCopy}
+      >
+        <Copy className="h-4 w-4" />
+      </Button>
     </div>
   );
 }
 
-function Thinking() {
+function ThinkingIndicator() {
   return (
-    <div className="flex items-start gap-4">
-      <Avatar>
-        <AvatarFallback>
-          <IbGenieLogo className="h-6 w-6 text-primary" />
-        </AvatarFallback>
-      </Avatar>
-      <div className="max-w-[75%] rounded-lg p-3 text-sm bg-muted">
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-2 animate-pulse rounded-full bg-primary" />
-          <div
-            className="h-2 w-2 animate-pulse rounded-full bg-primary"
-            style={{ animationDelay: "0.2s" }}
-          />
-          <div
-            className="h-2 w-2 animate-pulse rounded-full bg-primary"
-            style={{ animationDelay: "0.4s" }}
-          />
-        </div>
+    <div className="flex items-center justify-center p-4">
+      <div className="flex items-center gap-2">
+        <IbGenieLogo className="h-8 w-8 animate-pulse-glow text-primary" />
+        <span className="font-semibold text-muted-foreground">
+          IBGenie is thinking...
+        </span>
       </div>
     </div>
   );

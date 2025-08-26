@@ -1,11 +1,13 @@
 
 "use client";
 
+import { useState } from "react";
 import { prompts } from "@/lib/prompts";
 import type { Role, Program } from "@/app/page";
 import { ScrollArea } from "./ui/scroll-area";
 import { Button } from "./ui/button";
-import { Lightbulb, BookOpen, FlaskConical, ChevronDown } from "lucide-react";
+import { Input } from "./ui/input";
+import { Lightbulb, BookOpen, FlaskConical, ChevronDown, Search } from "lucide-react";
 import { RubricFeedbackTool } from "./rubric-feedback-tool";
 import {
   DropdownMenu,
@@ -17,7 +19,6 @@ import {
   DropdownMenuGroup
 } from "./ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-
 
 interface PromptLibraryProps {
   role: Role;
@@ -35,6 +36,7 @@ const icons: { [key: string]: React.ReactNode } = {
 };
 
 export function PromptLibrary({ role, program, setInput, setRole, setProgram }: PromptLibraryProps) {
+  const [searchQuery, setSearchQuery] = useState("");
   const rolePrompts = prompts[role];
   const programPrompts = rolePrompts[program];
 
@@ -55,6 +57,15 @@ export function PromptLibrary({ role, program, setInput, setRole, setProgram }: 
 
   const allRoles: Role[] = ["student", "teacher"];
   const allPrograms: Program[] = ["pyp", "myp", "dp"];
+
+  const filteredPrompts = programPrompts
+    .map((group) => ({
+      ...group,
+      prompts: group.prompts.filter((prompt) =>
+        prompt.title.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+    }))
+    .filter((group) => group.prompts.length > 0);
 
   return (
     <div className="flex h-full flex-col">
@@ -87,30 +98,46 @@ export function PromptLibrary({ role, program, setInput, setRole, setProgram }: 
                 </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
+        <div className="relative mt-2">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search prompts..."
+            className="w-full rounded-lg bg-background pl-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
       </div>
       <ScrollArea className="flex-1">
         <div className="space-y-4 p-2">
-          {programPrompts.map((group) => (
-            <div key={group.category}>
-              <h3 className="mb-2 px-2 text-sm font-semibold text-muted-foreground">
-                {group.category}
-              </h3>
-              <div className="space-y-1">
-                {group.prompts.map((prompt) => (
-                  <Button
-                    key={prompt.title}
-                    variant="ghost"
-                    className="w-full justify-start text-left h-auto"
-                    onClick={() => handlePromptClick(prompt.prompt)}
-                  >
-                    {icons[program] || icons.default}
-                    <span>{prompt.title}</span>
-                  </Button>
-                ))}
-                {group.isRubricTool && <RubricFeedbackTool />}
+          {filteredPrompts.length > 0 ? (
+            filteredPrompts.map((group) => (
+              <div key={group.category}>
+                <h3 className="mb-2 px-2 text-sm font-semibold text-muted-foreground">
+                  {group.category}
+                </h3>
+                <div className="space-y-1">
+                  {group.prompts.map((prompt) => (
+                    <Button
+                      key={prompt.title}
+                      variant="ghost"
+                      className="w-full justify-start text-left h-auto"
+                      onClick={() => handlePromptClick(prompt.prompt)}
+                    >
+                      {icons[program] || icons.default}
+                      <span>{prompt.title}</span>
+                    </Button>
+                  ))}
+                  {group.isRubricTool && <RubricFeedbackTool />}
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="p-2 text-center text-sm text-muted-foreground">
+              No prompts found.
+            </p>
+          )}
         </div>
       </ScrollArea>
     </div>
