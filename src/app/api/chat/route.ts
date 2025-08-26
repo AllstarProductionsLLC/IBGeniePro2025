@@ -46,6 +46,8 @@ export async function POST(request: NextRequest) {
           mimeType: file.type,
         },
       };
+      // When a file is uploaded, the history is not supported in the same request.
+      // The prompt should contain all the necessary context.
       const result = await model.generateContent([message, imagePart]);
       responseText = result.response.text();
     } else {
