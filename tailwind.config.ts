@@ -98,11 +98,16 @@ const config = {
             filter: 'drop-shadow(0 0 1rem hsl(var(--primary) / 0.8))',
           },
         },
+        shimmer: {
+          '0%, 100%': { 'background-position': '0% 50%' },
+          '50%': { 'background-position': '100% 50%' },
+        }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
+        'shimmer': 'shimmer 3s ease-in-out infinite',
       },
       typography: {
         DEFAULT: {
@@ -123,6 +128,7 @@ const config = {
             '--tw-prose-pre-bg': 'hsl(var(--muted))',
             '--tw-prose-th-borders': 'hsl(var(--border))',
             '--tw-prose-td-borders': 'hsl(var(--border))',
+            'color': 'inherit',
           },
         },
       },

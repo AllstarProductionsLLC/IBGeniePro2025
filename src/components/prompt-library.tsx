@@ -18,13 +18,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuGroup
 } from "./ui/dropdown-menu";
-import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
+import { personalities } from "@/lib/personalities";
 
 interface PromptLibraryProps {
   onUsePrompt: (prompt: string) => void;
-  role: Role;
-  program: Program;
   onNewChat: (role: Role, program: Program) => void;
 }
 
@@ -35,10 +33,17 @@ const icons: { [key: string]: React.ReactNode } = {
   dp: <Lightbulb className="mr-2 h-4 w-4" />,
 };
 
-export function PromptLibrary({ role, program, onNewChat, onUsePrompt }: PromptLibraryProps) {
+export function PromptLibrary({ onNewChat, onUsePrompt }: PromptLibraryProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const rolePrompts = prompts[role];
-  const programPrompts = rolePrompts[program];
+  // We need local state for role and program to show the correct prompts
+  // without switching the actual chat session until the user clicks an item.
+  const [viewRole, setViewRole] = useState<Role>('student');
+  const [viewProgram, setViewProgram] = useState<Program>('dp');
+
+  const rolePrompts = prompts[viewRole];
+  const programPrompts = rolePrompts[viewProgram];
+  
+  const personality = personalities[viewRole][viewProgram];
 
   const roleDisplay: Record<Role, string> = {
     student: "Student",
@@ -63,13 +68,23 @@ export function PromptLibrary({ role, program, onNewChat, onUsePrompt }: PromptL
     }))
     .filter((group) => group.prompts.length > 0);
 
+  const handleSelection = (role: Role, program: Program) => {
+    onNewChat(role, program);
+    // After creating a new chat, also update the local view state
+    setViewRole(role);
+    setViewProgram(program);
+  }
+
   return (
     <div className="flex h-full flex-col">
       <div className="p-2">
          <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="px-2 text-muted-foreground w-full justify-start -ml-1">
-                    For {program.toUpperCase()} {roleDisplay[role]}s
+                <Button variant="ghost" className="px-2 text-muted-foreground w-full justify-start h-auto text-left -ml-1">
+                    <div className="flex flex-col items-start">
+                      <span>Showing prompts for:</span>
+                      <span className="font-semibold text-foreground">{programDisplay[viewProgram]} {roleDisplay[viewRole]}s</span>
+                    </div>
                     <ChevronDown className="ml-auto h-4 w-4" />
                 </Button>
             </DropdownMenuTrigger>
@@ -77,7 +92,7 @@ export function PromptLibrary({ role, program, onNewChat, onUsePrompt }: PromptL
                 <DropdownMenuLabel>Student</DropdownMenuLabel>
                 <DropdownMenuGroup>
                     {allPrograms.map(p => (
-                        <DropdownMenuItem key={`student-${p}`} onClick={() => onNewChat('student', p)}>
+                        <DropdownMenuItem key={`student-${p}`} onClick={() => handleSelection('student', p)}>
                             For {programDisplay[p]} Students
                         </DropdownMenuItem>
                     ))}
@@ -86,7 +101,7 @@ export function PromptLibrary({ role, program, onNewChat, onUsePrompt }: PromptL
                  <DropdownMenuLabel>Teacher</DropdownMenuLabel>
                  <DropdownMenuGroup>
                     {allPrograms.map(p => (
-                        <DropdownMenuItem key={`teacher-${p}`} onClick={() => onNewChat('teacher', p)}>
+                        <DropdownMenuItem key={`teacher-${p}`} onClick={() => handleSelection('teacher', p)}>
                             For {programDisplay[p]} Teachers
                         </DropdownMenuItem>
                     ))}
@@ -112,7 +127,7 @@ export function PromptLibrary({ role, program, onNewChat, onUsePrompt }: PromptL
                     <AccordionTrigger className="py-2 text-sm font-medium hover:no-underline">{group.category}</AccordionTrigger>
                     <AccordionContent className="pb-1">
                         <div className="space-y-1">
-                            {group.isRubricTool && role === 'teacher' && <RubricFeedbackTool />}
+                            {group.isRubricTool && viewRole === 'teacher' && <RubricFeedbackTool />}
                             {group.prompts.map((prompt) => (
                                 <Button
                                     key={prompt.title}
@@ -120,7 +135,7 @@ export function PromptLibrary({ role, program, onNewChat, onUsePrompt }: PromptL
                                     className="w-full justify-start text-left h-auto"
                                     onClick={() => onUsePrompt(prompt.prompt)}
                                 >
-                                    {icons[program] || icons.default} {prompt.title}
+                                    {icons[viewProgram] || icons.default} {prompt.title}
                                 </Button>
                             ))}
                         </div>
