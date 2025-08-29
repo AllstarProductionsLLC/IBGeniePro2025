@@ -4,11 +4,10 @@ export async function GET(request: Request, { params }: { params: { id: string }
   try {
     const { id } = params;
 
-    // In a real application, you would retrieve the prompt from a database by ID
-    // This is a temporary client-side implementation within a server-side route
+    // This is a temporary client-side implementation.
     if (typeof window !== 'undefined') {
       const savedPrompts = JSON.parse(localStorage.getItem('savedPrompts') || '[]');
-      const prompt = savedPrompts.find((p: any) => p.id === id); // Assuming prompts have an 'id'
+      const prompt = savedPrompts.find((p: any) => p.id === id); 
 
       if (prompt) {
         return NextResponse.json(prompt);
@@ -17,7 +16,6 @@ export async function GET(request: Request, { params }: { params: { id: string }
       }
     }
 
-    // If window is not defined (server-side), return an error or handle accordingly
     return NextResponse.json({ message: 'Local storage not available', status: 'error' }, { status: 500 });
 
   } catch (error) {
@@ -31,10 +29,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const { id } = params;
     const updatedPromptData = await request.json();
 
-    // In a real application, you would update the prompt in a database by ID
-    // This is a temporary client-side implementation within a server-side route
+    // This is a temporary client-side implementation.
     if (typeof window !== 'undefined') {
-      const savedPrompts = JSON.parse(localStorage.getItem('savedPrompts') || '[]');
+      let savedPrompts = JSON.parse(localStorage.getItem('savedPrompts') || '[]');
       const promptIndex = savedPrompts.findIndex((p: any) => p.id === id);
 
       if (promptIndex !== -1) {
@@ -59,10 +56,9 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   try {
     const { id } = params;
 
-    // In a real application, you would delete the prompt from a database by ID
-    // This is a temporary client-side implementation within a server-side route
+    // This is a temporary client-side implementation.
     if (typeof window !== 'undefined') {
-      const savedPrompts = JSON.parse(localStorage.getItem('savedPrompts') || '[]');
+      let savedPrompts = JSON.parse(localStorage.getItem('savedPrompts') || '[]');
       const initialLength = savedPrompts.length;
       const filteredPrompts = savedPrompts.filter((p: any) => p.id !== id);
 
@@ -74,7 +70,6 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       }
     }
 
-    // If window is not defined (server-side), return an error or handle accordingly
     return NextResponse.json({ message: 'Local storage not available', status: 'error' }, { status: 500 });
 
   } catch (error) {

@@ -14,7 +14,7 @@ interface PromptLibraryProps {
 }
 
 
-const PromptLibrary: React.FC = () => {
+const PromptLibrary: React.FC<PromptLibraryProps> = (props) => {
   const [prompts, setPrompts] = useState<SavedPrompt[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +35,7 @@ const PromptLibrary: React.FC = () => {
         throw new Error(`Error fetching prompts: ${response.statusText}`);
       }
       const data = await response.json();
-      setPrompts(data);
+      setPrompts(data.data); // Access the data property
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -58,7 +58,7 @@ const PromptLibrary: React.FC = () => {
     setError(null);
 
     const promptToSave = {
-      id: Date.now().toString(), // Simple unique ID for now
+      id: editingPromptId || Date.now().toString(), // Simple unique ID for now
       title: newPromptData.title,
       prompt: newPromptData.prompt,
       category: newPromptData.category || undefined,
@@ -69,34 +69,33 @@ const PromptLibrary: React.FC = () => {
 
     const method = editingPromptId ? 'PUT' : 'POST';
     const url = editingPromptId ? `/api/prompts/${editingPromptId}` : '/api/prompts';
+    
+    // This is a temporary client-side implementation.
+    // In a real app, this would be a single API call.
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(editingPromptId ? { ...promptToSave, id: editingPromptId, updatedAt: Date.now() } : promptToSave),
-      });
+        let savedPrompts = JSON.parse(localStorage.getItem('savedPrompts') || '[]');
+        if (editingPromptId) {
+            const promptIndex = savedPrompts.findIndex((p: any) => p.id === editingPromptId);
+            if (promptIndex > -1) {
+                savedPrompts[promptIndex] = { ...savedPrompts[promptIndex], ...promptToSave };
+            }
+        } else {
+            savedPrompts.push(promptToSave);
+        }
+        localStorage.setItem('savedPrompts', JSON.stringify(savedPrompts));
+        
+        // Clear the form
+        setNewPromptData({ title: '', prompt: '', category: '', tags: '' });
+        setEditingPromptId(null);
+        setShowAddForm(false);
 
-      if (!response.ok) {
-        throw new Error(`Error saving prompt: ${response.statusText}`);
-      }
-
-      // Assuming the API returns the saved prompt or a success message
-      const result = await response.json();
-      console.log('Prompt saved:', result);
-
-      // Clear the form
-      setNewPromptData({ title: '', prompt: '', category: '', tags: '' });
-      setEditingPromptId(null);
-      setShowAddForm(false);
-
-      // Refresh the prompt list
-      fetchPrompts();
+        // Refresh the prompt list
+        fetchPrompts();
 
     } catch (error: any) {
       setError(error.message);
-      setLoading(false); // Stop loading on error
+    } finally {
+        setLoading(false);
     }
   };
 
@@ -116,18 +115,14 @@ const PromptLibrary: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/prompts/${id}`, {
-          method: 'DELETE',
-        });
-
-        if (!response.ok) {
-          throw new Error(`Error deleting prompt: ${response.statusText}`);
-        }
-
+        let savedPrompts = JSON.parse(localStorage.getItem('savedPrompts') || '[]');
+        const filteredPrompts = savedPrompts.filter((p: any) => p.id !== id);
+        localStorage.setItem('savedPrompts', JSON.stringify(filteredPrompts));
         // Refresh the prompt list
         fetchPrompts();
       } catch (error: any) {
         setError(error.message);
+      } finally {
         setLoading(false);
       }
     }
@@ -140,9 +135,14 @@ const PromptLibrary: React.FC = () => {
     <div style={{ padding: '20px', border: '1px solid #ccc', borderRadius: '8px', width: '300px', overflowY: 'auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h2>Prompt Library</h2>
-        <button onClick={() => setShowAddForm(!showAddForm)}>
-          {showAddForm ? 'Cancel Add' : 'Add New Prompt'}
- {editingPromptId && ' / Cancel Edit'}
+        <button onClick={() => {
+            setShowAddForm(!showAddForm);
+            if(showAddForm) {
+                setEditingPromptId(null);
+                setNewPromptData({ title: '', prompt: '', category: '', tags: '' });
+            }
+        }}>
+          {showAddForm ? 'Cancel' : 'Add New'}
         </button>
       </div>
 
@@ -182,7 +182,7 @@ const PromptLibrary: React.FC = () => {
             onChange={handleInputChange}
             style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
           />
-          <button type="submit" style={{ padding: '8px', backgroundColor: '#77B5FE', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Save Prompt</button>
+          <button type="submit" style={{ padding: '8px', backgroundColor: '#77B5FE', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>{editingPromptId ? 'Update Prompt' : 'Save Prompt'}</button>
         </form>
       )}
 

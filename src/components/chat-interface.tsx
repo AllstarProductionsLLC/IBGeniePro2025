@@ -77,6 +77,7 @@ interface ChatInterfaceProps {
   setRole: (role: Role) => void;
   setProgram: (program: Program) => void;
   onReset: () => void;
+  initialPrompt?: string;
 }
 
 export default function ChatInterface({
@@ -85,9 +86,10 @@ export default function ChatInterface({
   setRole: setParentRole,
   setProgram: setParentProgram,
   onReset: onParentReset,
+  initialPrompt,
 }: ChatInterfaceProps) {
   const isMobile = useIsMobile();
-  const [sidebarView, setSidebarView] = useState<'prompts' | 'history'>('prompts');
+  const [sidebarView, setSidebarView] = useState<'prompts' | 'history'>('history');
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
@@ -109,6 +111,12 @@ export default function ChatInterface({
   const messages = activeSession?.messages || [];
   const personality = personalities[role][program];
   
+  useEffect(() => {
+    if (initialPrompt) {
+      setInput(initialPrompt);
+    }
+  }, [initialPrompt]);
+
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
       titleInputRef.current.focus();
