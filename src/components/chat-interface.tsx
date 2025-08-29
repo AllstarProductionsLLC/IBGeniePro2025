@@ -563,7 +563,7 @@ export default function ChatInterface({
               role={role}
               program={program}
               onNewChat={handleNewChat}
-              setInput={setInput}
+              onUsePrompt={setInput}
             />
           ) : (
             <ChatHistory

@@ -19,11 +19,12 @@ import {
   DropdownMenuGroup
 } from "./ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
 
 interface PromptLibraryProps {
+  onUsePrompt: (prompt: string) => void;
   role: Role;
   program: Program;
-  setInput: (input: string) => void;
   onNewChat: (role: Role, program: Program) => void;
 }
 
@@ -34,15 +35,11 @@ const icons: { [key: string]: React.ReactNode } = {
   dp: <Lightbulb className="mr-2 h-4 w-4" />,
 };
 
-export function PromptLibrary({ role, program, setInput, onNewChat }: PromptLibraryProps) {
+export function PromptLibrary({ role, program, onNewChat, onUsePrompt }: PromptLibraryProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const rolePrompts = prompts[role];
   const programPrompts = rolePrompts[program];
 
-  const handlePromptClick = (prompt: string) => {
-    setInput(prompt);
-  };
-  
   const roleDisplay: Record<Role, string> = {
     student: "Student",
     teacher: "Teacher",
@@ -96,47 +93,46 @@ export function PromptLibrary({ role, program, setInput, onNewChat }: PromptLibr
                 </DropdownMenuGroup>
             </DropdownMenuContent>
         </DropdownMenu>
+
         <div className="relative mt-2">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search prompts..."
-            className="w-full rounded-lg bg-background pl-8"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+                type="search"
+                placeholder="Search prompts..."
+                className="w-full rounded-lg bg-background pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+            />
         </div>
       </div>
       <ScrollArea className="flex-1">
-        <div className="space-y-4 p-2">
-          {filteredPrompts.length > 0 ? (
-            filteredPrompts.map((group) => (
-              <div key={group.category}>
-                <h3 className="mb-2 px-2 text-sm font-semibold text-muted-foreground">
-                  {group.category}
-                </h3>
-                <div className="space-y-1">
-                  {group.prompts.map((prompt) => (
-                    <Button
-                      key={prompt.title}
-                      variant="ghost"
-                      className="w-full justify-start text-left h-auto"
-                      onClick={() => handlePromptClick(prompt.prompt)}
-                    >
-                      {icons[program] || icons.default}
-                      <span>{prompt.title}</span>
-                    </Button>
-                  ))}
-                  {group.isRubricTool && <RubricFeedbackTool />}
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="p-2 text-center text-sm text-muted-foreground">
-              No prompts found.
-            </p>
-          )}
-        </div>
+        <Accordion type="multiple" defaultValue={filteredPrompts.map(g => g.category)} className="w-full px-2">
+            {filteredPrompts.map((group) => (
+                <AccordionItem value={group.category} key={group.category}>
+                    <AccordionTrigger className="py-2 text-sm font-medium hover:no-underline">{group.category}</AccordionTrigger>
+                    <AccordionContent className="pb-1">
+                        <div className="space-y-1">
+                            {group.isRubricTool && role === 'teacher' && <RubricFeedbackTool />}
+                            {group.prompts.map((prompt) => (
+                                <Button
+                                    key={prompt.title}
+                                    variant="ghost"
+                                    className="w-full justify-start text-left h-auto"
+                                    onClick={() => onUsePrompt(prompt.prompt)}
+                                >
+                                    {icons[program] || icons.default} {prompt.title}
+                                </Button>
+                            ))}
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+            ))}
+        </Accordion>
+         {filteredPrompts.length === 0 && (
+            <div className="p-4 text-center text-sm text-muted-foreground">
+              No matching prompts found.
+            </div>
+        )}
       </ScrollArea>
     </div>
   );
