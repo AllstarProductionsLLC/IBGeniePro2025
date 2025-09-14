@@ -555,9 +555,9 @@ export default function ChatInterface({
 
   const renderDesktopHeaderActions = () => (
      <div className="ml-auto hidden items-center gap-2 md:flex">
-        <Button variant="outline" size="icon" onClick={onParentReset}>
-            <Home className="h-4 w-4" />
-            <span className="sr-only">Home</span>
+        <Button variant="outline" size="sm" onClick={onParentReset}>
+            <Home className="mr-2 h-4 w-4" />
+            Home
         </Button>
         <Button variant="outline" size="sm" onClick={handleCopy}>
             <Copy className="mr-2 h-4 w-4" /> Copy
@@ -875,3 +875,5 @@ function ThinkingIndicator() {
     </div>
   );
 }
+
+    
