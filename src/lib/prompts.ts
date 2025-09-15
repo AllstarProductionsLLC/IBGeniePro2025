@@ -3,55 +3,64 @@ export const prompts = {
   student: {
     pyp: [
       {
-        category: "Unit of Inquiry",
+        category: "Let's Inquire!",
         prompts: [
           {
-            title: "Explore a Central Idea",
+            title: "Ask Big Questions",
             prompt:
-              "Help me understand the central idea '[CENTRAL IDEA]' for the transdisciplinary theme '[THEME]'. What are some questions I could ask to learn more?",
+              "I'm learning about [TOPIC]. Help me think of some big, interesting questions to ask about it. What makes it special?",
           },
           {
-            title: "Brainstorm Exhibition Idea",
+            title: "Explore My Interests",
             prompt:
-              "I'm starting my PYP Exhibition. My passion is [TOPIC OF INTEREST]. Help me brainstorm a central idea, lines of inquiry, and key concepts.",
+              "I'm really interested in [TOPIC OF INTEREST]. Can you help me brainstorm some fun project ideas or things I can create to share my learning with my class?",
           },
           {
-            title: "Learner Profile Reflection",
+            title: "Learner Profile Power",
             prompt:
-              "I want to be more '[LEARNER PROFILE ATTRIBUTE]'. Can you give me some simple ideas or challenges to practice this attribute this week?",
+              "I want to practice being more [LEARNER PROFILE ATTRIBUTE, e.g., caring, courageous]. Can you give me a fun and simple mission to do today?",
           },
         ],
       },
       {
-        category: "Action & Reflection",
+        category: "Taking Action",
         prompts: [
           {
-            title: "Plan a Small Action",
+            title: "Be a Helper",
             prompt:
-              "I learned about [TOPIC] in my Unit of Inquiry. What is a small, achievable action I can take in my class or at home to make a positive difference?",
+              "I learned about [PROBLEM, e.g., litter in the park]. What's a small, kind action I can take in my school or at home to help solve this problem?",
           },
           {
-            title: "Draft a Reflection",
+            title: "Share What I Learned",
             prompt:
-              "Help me write a short reflection about what I learned in my '[SUBJECT]' lesson today. I found [SPECIFIC PART] interesting, but I'm still curious about [QUESTION].",
+              "I want to share what I learned about [TOPIC]. Can you help me think of a fun way to do it? Maybe a story, a drawing, or a short play?",
           },
         ],
       },
        {
-        category: "Productivity",
+        category: "Creative Thinking",
         prompts: [
           {
-            title: "Act as a Writing Coach",
-            prompt: "Review the following text and act as a writing coach. Provide feedback on its clarity, tone, and impact. Suggest specific improvements to make it more effective. Here is the text: [PASTE TEXT HERE]"
+            title: "Imagine a Story",
+            prompt: "Let's write a short story together! Give me a fun character, a magical setting, and a problem they need to solve. I'll start the story."
           },
           {
-            title: "Check Grammar and Spelling",
-            prompt: "Please check the following text for any grammatical errors, spelling mistakes, or typos. List the corrections needed. Here is the text: [PASTE TEXT HERE]"
-          },
-          {
-            title: "Draft a Communication",
-            prompt: "Help me draft a polite and clear email to [RECIPIENT, e.g., my teacher] about [PURPOSE OF EMAIL, e.g., asking for an extension on my assignment]."
+            title: "Think Like an Inventor",
+            prompt: "I want to invent something to help with [DAILY TASK, e.g., cleaning my room]. Help me brainstorm a silly and creative invention. What would it look like? What would it do?"
           }
+        ]
+      },
+      {
+        category: "Being a Good Communicator",
+        prompts: [
+            {
+                title: "Practice My Writing",
+                prompt: "Can you check this sentence for me? I want to make sure it makes sense. Here it is: [PASTE SENTENCE HERE]"
+            },
+            {
+                title: "Draft a Friendly Message",
+                prompt: "Help me write a kind and clear message to [PERSON, e.g., my friend] to say [YOUR MESSAGE, e.g., thank you for playing with me]."
+            }
         ]
       }
     ],
