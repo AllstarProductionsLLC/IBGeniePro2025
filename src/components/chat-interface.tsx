@@ -31,7 +31,6 @@ import {
 } from "lucide-react";
 import type { Role, Program } from "@/app/page";
 import { IbGenieLogo } from "./ib-genie-logo";
-import { PromptLibrary } from "./prompt-library";
 import { ChatHistory } from "./chat-history";
 import { Textarea } from "./ui/textarea";
 import { ScrollArea } from "./ui/scroll-area";
@@ -51,6 +50,7 @@ import { useToast } from "@/hooks/use-toast";
 import { renderToString } from 'react-dom/server';
 import { v4 as uuidv4 } from 'uuid';
 import { Input } from "./ui/input";
+import PromptLibrary from "@/components/PromptLibrary";
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -660,10 +660,7 @@ export default function ChatInterface({
           </SidebarHeader>
 
           {sidebarView === 'prompts' ? (
-            <PromptLibrary
-              onNewChat={handleNewChat}
-              onUsePrompt={setInput}
-            />
+            <PromptLibrary onUsePrompt={setInput} />
           ) : (
             <ChatHistory
               sessions={chatHistory}
@@ -682,8 +679,8 @@ export default function ChatInterface({
           <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm sm:h-16 sm:px-6">
              <SidebarTrigger className="flex md:hidden" />
             <div className="flex flex-1 items-center gap-2 min-w-0">
+               <SidebarTrigger className="hidden md:flex" />
                <div className="flex items-center gap-2 cursor-pointer" onClick={onParentReset}>
-                 <SidebarTrigger className="hidden md:flex" />
                  <IbGenieLogo className="h-7 w-7 text-primary flex-shrink-0" />
               </div>
               {renderHeaderTitle()}
@@ -875,5 +872,3 @@ function ThinkingIndicator() {
     </div>
   );
 }
-
-    
