@@ -1,6 +1,30 @@
-# IB Genie AI Assistant
+# **IB Genie AI Assistant**
 
-This is a Next.js starter project for an AI assistant tailored for the International Baccalaureate (IB) program, built to run in an IDE-based environment.
+This is a Next.js starter project for an AI assistant tailored for the International Baccalaureate (IB) program, built to run in an IDE-based environment. IBGenie is designed to support both students and teachers within the IB framework.
+
+## Core Features:
+
+*   **Role and Program Selection:** Allows users to select their role (Student/Teacher) and IB program (PYP/MYP/DP), tailoring the app's UI and routing.
+*   **Chat Interface:** Provides a core chat UI with features like text input, streaming AI responses, safety reminders, and file uploads.
+*   **Rubric-Based Formative Feedback:** Generates AI-powered, criterion-linked feedback based on uploaded rubrics, utilizing AI reasoning to extract key information.
+*   **Document Export:** Enables exporting chat contents in various formats including Word, Excel, PPT, and PDF.
+*   **Context-Aware Text Generation:** Offers AI assistance for text input, incorporating context such as the current time and information from voice dictation or text uploads.
+*   **Chat History Management:** Manages chat history locally using IndexedDB, with an option for cloud storage configurable via user settings.
+*   **Progressive Web App Support:** Includes PWA capabilities for offline access and mobile installation, adhering to data protection and privacy standards.
+
+## Style Guidelines:
+
+*   **Primary Color:** Soft blue (#77B5FE) - a calming and reliable color for study.
+*   **Background Color:** Very light blue (#F0F8FF) - offers a gentle contrast.
+*   **Accent Color:** Periwinkle (#CCCCFF) - provides subtle highlighting.
+*   **Headings Font:** 'Poppins' - a contemporary, geometric sans-serif.
+*   **Body Text Font:** 'Inter' - a modern, grotesque-style sans-serif.
+*   **Icons:** Consistent and clear icons from libraries like Material UI, focusing on a clear and geometric visual style.
+*   **Layout:** Responsive design with a single-column view on mobile, and left/right panels or a bottom drawer on larger screens.
+
+---
+
+
 
 ## Getting Started
 

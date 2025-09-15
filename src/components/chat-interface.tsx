@@ -10,11 +10,9 @@ import {
   SidebarTrigger,
   SidebarInset,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
+import { Button } from "./ui/button";
 import {
   CircleUser,
   FileUp,
@@ -23,18 +21,17 @@ import {
   X,
   Copy,
   FileDown,
-  Wand2,
-  Save,
   MoreVertical,
   Upload,
   MessageSquare,
   Sparkles,
   Home,
   Edit,
+  FileText,
+  PanelLeft,
 } from "lucide-react";
 import type { Role, Program } from "@/app/page";
 import { IbGenieLogo } from "./ib-genie-logo";
-import { PromptLibrary } from "./prompt-library";
 import { ChatHistory } from "./chat-history";
 import { Textarea } from "./ui/textarea";
 import { ScrollArea } from "./ui/scroll-area";
@@ -48,11 +45,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "./ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { renderToString } from 'react-dom/server';
 import { v4 as uuidv4 } from 'uuid';
 import { Input } from "./ui/input";
+import { PromptLibrary } from "./prompt-library";
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -66,6 +65,11 @@ export interface ChatSession {
     program: Program;
     messages: ChatMessage[];
     createdAt: number;
+    attachedFile?: {
+        name: string;
+        type: string;
+        data: string; // base64 encoded
+    }
 }
 
 interface ChatInterfaceProps {
@@ -74,6 +78,7 @@ interface ChatInterfaceProps {
   setRole: (role: Role) => void;
   setProgram: (program: Program) => void;
   onReset: () => void;
+  initialPrompt?: string;
 }
 
 export default function ChatInterface({
@@ -82,9 +87,10 @@ export default function ChatInterface({
   setRole: setParentRole,
   setProgram: setParentProgram,
   onReset: onParentReset,
+  initialPrompt,
 }: ChatInterfaceProps) {
   const isMobile = useIsMobile();
-  const [sidebarView, setSidebarView] = useState<'prompts' | 'history'>('prompts');
+  const [sidebarView, setSidebarView] = useState<'prompts' | 'history'>('history');
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
@@ -106,6 +112,12 @@ export default function ChatInterface({
   const messages = activeSession?.messages || [];
   const personality = personalities[role][program];
   
+  useEffect(() => {
+    if (initialPrompt) {
+      setInput(initialPrompt);
+    }
+  }, [initialPrompt]);
+
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
       titleInputRef.current.focus();
@@ -150,17 +162,22 @@ export default function ChatInterface({
         });
       }
     } else {
-        // If history is empty, remove it from local storage
         localStorage.removeItem("ibGenieChatHistory");
     }
   }, [chatHistory, toast]);
 
-  const updateMessages = (newMessages: ChatMessage[]) => {
-     setChatHistory(prev => prev.map(session => 
-        session.id === activeSessionId ? { ...session, messages: newMessages } : session
-     ));
+  const updateSession = (sessionId: string, updates: Partial<ChatSession>) => {
+    setChatHistory(prev => prev.map(session => 
+      session.id === sessionId ? { ...session, ...updates } : session
+    ));
   };
 
+  const updateMessages = (newMessages: ChatMessage[]) => {
+    if (activeSessionId) {
+      updateSession(activeSessionId, { messages: newMessages });
+    }
+  };
+  
   const handleNewChat = (role: Role, program: Program) => {
     const welcomeMessage = personalities[role][program].welcomeMessage;
     const newSession: ChatSession = {
@@ -185,17 +202,25 @@ export default function ChatInterface({
             if (nextSession) {
                 setActiveSessionId(nextSession.id);
             } else {
-                // If no sessions are left, create a new one
                 handleNewChat(initialRole, initialProgram);
             }
         }
-        // If all chats are deleted, create a new one.
         if (updatedHistory.length === 0) {
             handleNewChat(initialRole, initialProgram);
         }
         return updatedHistory;
     });
   };
+
+  const handleDeleteAllChats = () => {
+    setChatHistory([]);
+    setActiveSessionId(null);
+    handleNewChat(initialRole, initialProgram);
+    toast({
+        title: "Chat History Cleared",
+        description: "All conversations have been deleted.",
+    });
+  }
 
   const handleRenameChat = (sessionId: string, newTitle: string) => {
       setChatHistory(prev => prev.map(session => 
@@ -204,7 +229,7 @@ export default function ChatInterface({
   };
   
   const handleStartTitleEdit = () => {
-    if (activeSession) {
+    if (activeSession && !isMobile) {
       setIsEditingTitle(true);
       setTitleRenameValue(activeSession.title);
     }
@@ -225,12 +250,25 @@ export default function ChatInterface({
     }
   }
 
-  const handleFileSelect = (selectedFile: File) => {
-    if (selectedFile) {
-      setFile(selectedFile);
-      setInput(
-        `Attached file: ${selectedFile.name}. What should I do with this file?`
-      );
+  const fileToBase64 = (file: File): Promise<string> => {
+      return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = error => reject(error);
+      });
+  }
+
+  const handleFileSelect = async (selectedFile: File) => {
+    if (selectedFile && activeSessionId) {
+      const fileData = await fileToBase64(selectedFile);
+      const newFileAttachment = {
+        name: selectedFile.name,
+        type: selectedFile.type,
+        data: fileData.split(',')[1] // remove the data URI prefix
+      };
+      updateSession(activeSessionId, { attachedFile: newFileAttachment });
+      setFile(selectedFile); // Keep the file object for the current request
     }
   };
 
@@ -279,10 +317,10 @@ export default function ChatInterface({
   const triggerFileUpload = () => fileInputRef.current?.click();
 
   const removeFile = () => {
-    setFile(null);
-    if (input.includes("Attached file:")) {
-      setInput("");
+    if(activeSessionId) {
+        updateSession(activeSessionId, { attachedFile: undefined });
     }
+    setFile(null); // Clear the temporary file state
   };
 
   const handleSend = async () => {
@@ -296,8 +334,8 @@ export default function ChatInterface({
 
     try {
       const history = newMessages
-        .slice(0, -1) // Exclude the latest user message
-        .filter((msg) => msg.role !== 'assistant' || msg.content !== personality.welcomeMessage) // Filter out welcome message
+        .slice(0, -1) 
+        .filter((msg) => msg.role !== 'assistant' || msg.content !== personality.welcomeMessage) 
         .map((msg) => ({
           role: msg.role === 'assistant' ? 'model' : 'user',
           parts: [{ text: msg.content }],
@@ -308,16 +346,17 @@ export default function ChatInterface({
       formData.append("role", role);
       formData.append("program", program);
       formData.append("history", JSON.stringify(history));
-      if (file) {
-        formData.append("file", file);
+      
+      const fileToSend = file || (activeSession.attachedFile ? new File([Buffer.from(activeSession.attachedFile.data, 'base64')], activeSession.attachedFile.name, { type: activeSession.attachedFile.type }) : null);
+
+      if (fileToSend) {
+        formData.append("file", fileToSend);
       }
       
-      // Update session title
-      if(activeSession.title === "New Chat" && activeSession.messages.length <= 1) { // It's a new chat
+      if(activeSession.title === "New Chat" && activeSession.messages.length <= 1) { 
         const title = input.split(' ').slice(0, 5).join(' ') + '...';
-        setChatHistory(prev => prev.map(s => s.id === activeSessionId ? {...s, title} : s));
+        handleRenameChat(activeSession.id, title);
       }
-
 
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -345,7 +384,7 @@ export default function ChatInterface({
       ]);
     } finally {
       setIsLoading(false);
-      setFile(null);
+      setFile(null); // Clear temporary file state after sending
     }
   };
 
@@ -493,13 +532,10 @@ export default function ChatInterface({
     }
   };
   
-  const capitalizedRole = role.charAt(0).toUpperCase() + role.slice(1);
-  const identityText = `IB Genie ${capitalizedRole} Edition`;
-  
   const renderHeaderTitle = () => {
     if (isMobile) {
       return (
-        <h1 className="text-lg font-semibold tracking-tight md:text-xl font-headline whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer" onClick={onParentReset}>
+        <h1 className="text-lg font-semibold tracking-tight md:text-xl font-headline whitespace-nowrap overflow-hidden text-ellipsis">
           IBGenie
         </h1>
       );
@@ -519,21 +555,91 @@ export default function ChatInterface({
     return (
       <div className="flex items-center gap-2 group/title" onClick={handleStartTitleEdit}>
         <h1 className="text-lg font-semibold tracking-tight md:text-xl font-headline whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer">
-          {activeSession?.title || identityText}
+          {activeSession?.title || "IBGenie"}
         </h1>
         <Edit className="h-4 w-4 text-muted-foreground opacity-0 group-hover/title:opacity-100 transition-opacity" />
       </div>
     );
   }
 
+  const renderDesktopHeaderActions = () => (
+     <div className="ml-auto hidden items-center gap-2 md:flex">
+        <Button variant="outline" size="sm" onClick={onParentReset}>
+            <Home className="mr-2 h-4 w-4" />
+            Home
+        </Button>
+        <Button variant="outline" size="sm" onClick={handleCopy}>
+            <Copy className="mr-2 h-4 w-4" /> Copy
+        </Button>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+                <FileDown className="mr-2 h-4 w-4" /> Export
+            </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+            <DropdownMenuItem onClick={handleExportWord}>
+                Word Document (.doc)
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExportTxt}>
+                Plain Text (.txt)
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExportPdf}>
+                PDF
+            </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    </div>
+  )
+
+  const renderMobileHeaderActions = () => (
+     <div className="ml-auto flex items-center gap-2 md:hidden">
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                    <MoreVertical className="h-5 w-5" />
+                    <span className="sr-only">More options</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={onParentReset}>
+                    <Home className="mr-2 h-4 w-4" /> Home
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleNewChat(initialRole, initialProgram)}>
+                    New Chat
+                </DropdownMenuItem>
+                 <DropdownMenuItem onClick={handleCopy}>
+                    <Copy className="mr-2 h-4 w-4" /> Copy Chat
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleExportWord}>
+                    <FileDown className="mr-2 h-4 w-4" /> Export as Word
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportTxt}>
+                     <FileText className="mr-2 h-4 w-4" /> Export as Text
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportPdf}>
+                    <FileDown className="mr-2 h-4 w-4" /> Export as PDF
+                </DropdownMenuItem>
+                 <DropdownMenuSeparator />
+                 <DropdownMenuItem onClick={() => setSidebarView('history')}>
+                    <MessageSquare className="mr-2 h-4 w-4" /> View History
+                </DropdownMenuItem>
+                 <DropdownMenuItem onClick={() => setSidebarView('prompts')}>
+                    <Sparkles className="mr-2 h-4 w-4" /> View Prompts
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    </div>
+  )
+
   return (
     <SidebarProvider>
       <Sidebar
-        variant="sidebar"
         collapsible="icon"
         className="group hidden data-[state=expanded]:w-72 md:flex"
       >
-        <SidebarContent className="p-0">
+        <SidebarContent className="p-0 flex flex-col">
           <SidebarHeader className="p-2 pb-0">
             <h2 className="px-2 text-lg font-semibold tracking-tight font-headline">IBGenie</h2>
             <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-md">
@@ -559,12 +665,7 @@ export default function ChatInterface({
           </SidebarHeader>
 
           {sidebarView === 'prompts' ? (
-            <PromptLibrary
-              role={role}
-              program={program}
-              onNewChat={handleNewChat}
-              setInput={setInput}
-            />
+            <PromptLibrary onUsePrompt={setInput} onNewChat={handleNewChat} />
           ) : (
             <ChatHistory
               sessions={chatHistory}
@@ -573,6 +674,7 @@ export default function ChatInterface({
               onDeleteSession={handleDeleteChat}
               onNewChat={() => handleNewChat(initialRole, initialProgram)}
               onRenameSession={handleRenameChat}
+              onDeleteAllSessions={handleDeleteAllChats}
             />
           )}
 
@@ -581,56 +683,15 @@ export default function ChatInterface({
       <SidebarInset>
         <div className="flex h-screen w-full flex-col bg-background">
           <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm sm:h-16 sm:px-6">
-             <SidebarTrigger className="flex md:hidden" />
+            <SidebarTrigger className="flex md:hidden" />
+             <div className="flex items-center gap-2 cursor-pointer" onClick={onParentReset}>
+                <IbGenieLogo className="h-7 w-7 text-primary flex-shrink-0" />
+             </div>
             <div className="flex flex-1 items-center gap-2 min-w-0">
-               <div className="flex items-center gap-2 cursor-pointer" onClick={onParentReset}>
-                 <SidebarTrigger className="hidden md:flex" />
-                 <IbGenieLogo className="h-7 w-7 text-primary flex-shrink-0" />
-              </div>
               {renderHeaderTitle()}
             </div>
-            <div className="ml-auto flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={onParentReset}>
-                  <Home className="h-4 w-4" />
-                  <span className="sr-only">Home</span>
-              </Button>
-               <Button variant="outline" size="sm" onClick={handleCopy}>
-                <Copy className="mr-2 h-4 w-4" /> Copy
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <FileDown className="mr-2 h-4 w-4" /> Export
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={handleExportWord}>
-                    Word Document (.doc)
-                  </DropdownMenuItem>
-                   <DropdownMenuItem onClick={handleExportTxt}>
-                    Plain Text (.txt)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleExportPdf}>
-                    PDF
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                   <Button variant="outline" size="sm">
-                    <MoreVertical className="mr-2 h-4 w-4" /> Chat Options
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                   <DropdownMenuItem onClick={() => handleNewChat(role, program)}>
-                     <Trash2 className="mr-2 h-4 w-4" /> New Chat
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleExportTxt}>
-                    <Save className="mr-2 h-4 w-4" /> Save Chat
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            {renderDesktopHeaderActions()}
+            {renderMobileHeaderActions()}
           </header>
 
           <main className="flex flex-1 flex-col overflow-hidden">
@@ -638,7 +699,7 @@ export default function ChatInterface({
                 <div className="p-4 md:p-6">
                   <div className="mx-auto max-w-4xl space-y-6">
                     {messages.map((message, index) => (
-                      <ChatMessage key={index} {...message} />
+                      <ChatMessageComponent key={index} {...message} />
                     ))}
                     {isLoading && <ThinkingIndicator />}
                   </div>
@@ -660,10 +721,10 @@ export default function ChatInterface({
                       </p>
                     </div>
                   )}
-                  {file && (
+                  {(file || activeSession?.attachedFile) && (
                     <div className="mb-2 flex items-center justify-center">
                       <Badge variant="secondary">
-                        {file.name}
+                        {file?.name || activeSession?.attachedFile?.name}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -678,7 +739,7 @@ export default function ChatInterface({
                   <div className="relative">
                     <Textarea
                       placeholder="Ask IBGenie anything..."
-                      className="min-h-12 resize-none pr-32"
+                      className="min-h-12 resize-none pr-24 md:pr-32"
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={(e) => {
@@ -707,7 +768,7 @@ export default function ChatInterface({
                       <Button
                         onClick={handleSend}
                         size="icon"
-                        disabled={isLoading}
+                        disabled={isLoading || !input.trim()}
                       >
                         <Send className="h-5 w-5" />
                       </Button>
@@ -726,7 +787,7 @@ export default function ChatInterface({
   );
 }
 
-function ChatMessage({ role, content }: { role: 'user' | 'assistant'; content: string }) {
+function ChatMessageComponent({ role, content }: { role: 'user' | 'assistant'; content: string }) {
   const { toast } = useToast();
   const isAssistant = role === "assistant";
 
@@ -753,25 +814,25 @@ function ChatMessage({ role, content }: { role: 'user' | 'assistant'; content: s
     <div
       className={cn(
         "group flex items-start gap-4",
-        !isAssistant && "flex-row-reverse"
+        !isAssistant && "justify-end"
       )}
     >
-      <Avatar>
-        <AvatarFallback>
-          {isAssistant ? (
+      {isAssistant && (
+        <Avatar className="flex-shrink-0">
+          <AvatarFallback>
             <IbGenieLogo className="h-6 w-6" />
-          ) : (
-            <CircleUser />
-          )}
-        </AvatarFallback>
-      </Avatar>
+          </AvatarFallback>
+        </Avatar>
+      )}
       <div
         className={cn(
-          "max-w-[75%] rounded-lg p-3 text-sm",
-          isAssistant ? "bg-muted" : "bg-primary text-primary-foreground"
+          "max-w-[85%] rounded-lg p-3 text-sm md:max-w-[75%]",
+          isAssistant
+            ? "bg-muted order-2"
+            : "bg-primary text-primary-foreground order-1"
         )}
       >
-        <div className="prose prose-sm max-w-none">
+        <div className="prose prose-sm max-w-none text-current">
           <ReactMarkdown
             components={{
               p: ({ node, ...props }) => (
@@ -783,14 +844,23 @@ function ChatMessage({ role, content }: { role: 'user' | 'assistant'; content: s
           </ReactMarkdown>
         </div>
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100"
-        onClick={handleCopy}
-      >
-        <Copy className="h-4 w-4" />
-      </Button>
+      {!isAssistant && (
+        <Avatar className="flex-shrink-0 order-2">
+            <AvatarFallback>
+                <CircleUser />
+            </AvatarFallback>
+        </Avatar>
+      )}
+      <div className={cn("flex-shrink-0 self-center order-3", isAssistant ? "" : "-order-1")}>
+        <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100"
+            onClick={handleCopy}
+        >
+            <Copy className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 }
@@ -800,12 +870,14 @@ function ThinkingIndicator() {
     <div className="flex items-center justify-center p-4">
       <div className="flex items-center gap-2">
         <IbGenieLogo className="h-8 w-8 animate-pulse-glow text-primary" />
-        <span className="font-semibold text-muted-foreground">
+        <span className="font-semibold text-muted-foreground animate-shimmer bg-clip-text text-transparent bg-[linear-gradient(110deg,theme(colors.muted.foreground),45%,theme(colors.foreground),55%,theme(colors.muted.foreground))] bg-[length:250%_100%]">
           IBGenie is thinking...
         </span>
       </div>
     </div>
   );
 }
+
+    
 
     

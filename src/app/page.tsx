@@ -27,12 +27,14 @@ export default function Home() {
   }
 
   return (
-    <ChatInterface
-      role={role}
-      program={program}
-      setRole={setRole}
-      setProgram={setProgram}
-      onReset={handleReset}
-    />
+    <div style={{ height: '100vh' }}>
+        <ChatInterface 
+            role={role} 
+            program={program} 
+            setRole={setRole}
+            setProgram={setProgram}
+            onReset={handleReset} 
+        />
+    </div>
   );
 }

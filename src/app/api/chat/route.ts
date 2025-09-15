@@ -36,7 +36,6 @@ export async function POST(request: NextRequest) {
         throw new Error("History is not an array");
     }
 
-
     let responseText;
 
     if (file) {
@@ -46,10 +45,13 @@ export async function POST(request: NextRequest) {
           mimeType: file.type,
         },
       };
-      // When a file is uploaded, the history is not supported in the same request.
-      // The prompt should contain all the necessary context.
-      const result = await model.generateContent([message, imagePart]);
+      
+      const chat = model.startChat({
+         history: history,
+      });
+      const result = await chat.sendMessage([message, imagePart]);
       responseText = result.response.text();
+
     } else {
       const chat = model.startChat({
          history: history,
@@ -61,6 +63,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: responseText });
   } catch (error) {
     console.error("Error calling Gemini API:", error);
-    return NextResponse.json({ error: "Failed to get response from AI" }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    return NextResponse.json({ error: `Failed to get response from AI: ${errorMessage}` }, { status: 500 });
   }
 }
