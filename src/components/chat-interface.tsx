@@ -11,7 +11,7 @@ import {
   SidebarInset,
   SidebarHeader,
 } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
+import { Button } from "./ui/button";
 import {
   CircleUser,
   FileUp,
@@ -50,7 +50,7 @@ import { useToast } from "@/hooks/use-toast";
 import { renderToString } from 'react-dom/server';
 import { v4 as uuidv4 } from 'uuid';
 import { Input } from "./ui/input";
-import { PromptLibrary } from "@/components/prompt-library";
+import { PromptLibrary } from "./prompt-library";
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -580,7 +580,7 @@ export default function ChatInterface({
             </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
-        <Button variant="outline" size="sm" onClick={() => handleDeleteChat(activeSessionId!)}>
+        <Button variant="outline" size="sm" onClick={() => handleNewChat(initialRole, initialProgram)}>
             <Trash2 className="mr-2 h-4 w-4" /> New Chat
         </Button>
     </div>
@@ -599,7 +599,7 @@ export default function ChatInterface({
                 <DropdownMenuItem onClick={onParentReset}>
                     <Home className="mr-2 h-4 w-4" /> Home
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleDeleteChat(activeSessionId!)}>
+                <DropdownMenuItem onClick={() => handleNewChat(initialRole, initialProgram)}>
                     <Trash2 className="mr-2 h-4 w-4" /> New Chat
                 </DropdownMenuItem>
                  <DropdownMenuItem onClick={handleCopy}>
@@ -630,7 +630,6 @@ export default function ChatInterface({
   return (
     <SidebarProvider>
       <Sidebar
-        variant="sidebar"
         collapsible="icon"
         className="group hidden data-[state=expanded]:w-72 md:flex"
       >
@@ -677,11 +676,11 @@ export default function ChatInterface({
       <SidebarInset>
         <div className="flex h-screen w-full flex-col bg-background">
           <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm sm:h-16 sm:px-6">
-            <SidebarTrigger className="flex md:hidden" />
+             <SidebarTrigger className="flex md:hidden" />
+             <div className="flex items-center gap-2 cursor-pointer" onClick={onParentReset}>
+                <IbGenieLogo className="h-7 w-7 text-primary flex-shrink-0" />
+             </div>
             <div className="flex flex-1 items-center gap-2 min-w-0">
-               <div className="flex items-center gap-2 cursor-pointer" onClick={onParentReset}>
-                 <IbGenieLogo className="h-7 w-7 text-primary flex-shrink-0" />
-              </div>
               {renderHeaderTitle()}
             </div>
             {renderDesktopHeaderActions()}
@@ -693,7 +692,7 @@ export default function ChatInterface({
                 <div className="p-4 md:p-6">
                   <div className="mx-auto max-w-4xl space-y-6">
                     {messages.map((message, index) => (
-                      <ChatMessage key={index} {...message} />
+                      <ChatMessageComponent key={index} {...message} />
                     ))}
                     {isLoading && <ThinkingIndicator />}
                   </div>
@@ -781,7 +780,7 @@ export default function ChatInterface({
   );
 }
 
-function ChatMessage({ role, content }: { role: 'user' | 'assistant'; content: string }) {
+function ChatMessageComponent({ role, content }: { role: 'user' | 'assistant'; content: string }) {
   const { toast } = useToast();
   const isAssistant = role === "assistant";
 
