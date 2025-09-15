@@ -51,7 +51,7 @@ import { useToast } from "@/hooks/use-toast";
 import { renderToString } from 'react-dom/server';
 import { v4 as uuidv4 } from 'uuid';
 import { Input } from "./ui/input";
-import PromptLibrary from "./PromptLibrary";
+import { PromptLibrary } from "./prompt-library";
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -665,7 +665,7 @@ export default function ChatInterface({
           </SidebarHeader>
 
           {sidebarView === 'prompts' ? (
-            <PromptLibrary onUsePrompt={setInput} />
+            <PromptLibrary onUsePrompt={setInput} onNewChat={handleNewChat} />
           ) : (
             <ChatHistory
               sessions={chatHistory}
@@ -877,5 +877,7 @@ function ThinkingIndicator() {
     </div>
   );
 }
+
+    
 
     
