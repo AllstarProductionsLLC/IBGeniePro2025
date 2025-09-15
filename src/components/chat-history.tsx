@@ -17,7 +17,8 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import { Separator } from './ui/separator';
 
 interface ChatHistoryProps {
   sessions: ChatSession[];
@@ -26,6 +27,7 @@ interface ChatHistoryProps {
   onDeleteSession: (id: string) => void;
   onNewChat: () => void;
   onRenameSession: (id: string, newTitle: string) => void;
+  onDeleteAllSessions: () => void;
 }
 
 export function ChatHistory({
@@ -35,6 +37,7 @@ export function ChatHistory({
   onDeleteSession,
   onNewChat,
   onRenameSession,
+  onDeleteAllSessions,
 }: ChatHistoryProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -158,6 +161,33 @@ export function ChatHistory({
           )}
         </div>
       </ScrollArea>
+      <Separator />
+        <div className="p-2">
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="ghost" className="w-full text-destructive hover:text-destructive">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Clear all history
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete all of your chat sessions.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={onDeleteAllSessions} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Delete All
+                    </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
     </div>
   );
 }
+
+    

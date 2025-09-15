@@ -10,6 +10,7 @@ import {
   SidebarTrigger,
   SidebarInset,
   SidebarHeader,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Button } from "./ui/button";
 import {
@@ -20,7 +21,6 @@ import {
   X,
   Copy,
   FileDown,
-  Save,
   MoreVertical,
   Upload,
   MessageSquare,
@@ -28,6 +28,7 @@ import {
   Home,
   Edit,
   FileText,
+  PanelLeft,
 } from "lucide-react";
 import type { Role, Program } from "@/app/page";
 import { IbGenieLogo } from "./ib-genie-logo";
@@ -50,7 +51,7 @@ import { useToast } from "@/hooks/use-toast";
 import { renderToString } from 'react-dom/server';
 import { v4 as uuidv4 } from 'uuid';
 import { Input } from "./ui/input";
-import { PromptLibrary } from "./prompt-library";
+import PromptLibrary from "./PromptLibrary";
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -210,6 +211,16 @@ export default function ChatInterface({
         return updatedHistory;
     });
   };
+
+  const handleDeleteAllChats = () => {
+    setChatHistory([]);
+    setActiveSessionId(null);
+    handleNewChat(initialRole, initialProgram);
+    toast({
+        title: "Chat History Cleared",
+        description: "All conversations have been deleted.",
+    });
+  }
 
   const handleRenameChat = (sessionId: string, newTitle: string) => {
       setChatHistory(prev => prev.map(session => 
@@ -521,12 +532,10 @@ export default function ChatInterface({
     }
   };
   
-  const identityText = `IB Genie ${role.charAt(0).toUpperCase() + role.slice(1)} Edition`;
-  
   const renderHeaderTitle = () => {
     if (isMobile) {
       return (
-        <h1 className="text-lg font-semibold tracking-tight md:text-xl font-headline whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer" onClick={onParentReset}>
+        <h1 className="text-lg font-semibold tracking-tight md:text-xl font-headline whitespace-nowrap overflow-hidden text-ellipsis">
           IBGenie
         </h1>
       );
@@ -546,7 +555,7 @@ export default function ChatInterface({
     return (
       <div className="flex items-center gap-2 group/title" onClick={handleStartTitleEdit}>
         <h1 className="text-lg font-semibold tracking-tight md:text-xl font-headline whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer">
-          {activeSession?.title || identityText}
+          {activeSession?.title || "IBGenie"}
         </h1>
         <Edit className="h-4 w-4 text-muted-foreground opacity-0 group-hover/title:opacity-100 transition-opacity" />
       </div>
@@ -580,9 +589,6 @@ export default function ChatInterface({
             </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
-        <Button variant="outline" size="sm" onClick={() => handleNewChat(initialRole, initialProgram)}>
-            <Trash2 className="mr-2 h-4 w-4" /> New Chat
-        </Button>
     </div>
   )
 
@@ -600,7 +606,7 @@ export default function ChatInterface({
                     <Home className="mr-2 h-4 w-4" /> Home
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleNewChat(initialRole, initialProgram)}>
-                    <Trash2 className="mr-2 h-4 w-4" /> New Chat
+                    New Chat
                 </DropdownMenuItem>
                  <DropdownMenuItem onClick={handleCopy}>
                     <Copy className="mr-2 h-4 w-4" /> Copy Chat
@@ -633,7 +639,7 @@ export default function ChatInterface({
         collapsible="icon"
         className="group hidden data-[state=expanded]:w-72 md:flex"
       >
-        <SidebarContent className="p-0">
+        <SidebarContent className="p-0 flex flex-col">
           <SidebarHeader className="p-2 pb-0">
             <h2 className="px-2 text-lg font-semibold tracking-tight font-headline">IBGenie</h2>
             <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-md">
@@ -659,7 +665,7 @@ export default function ChatInterface({
           </SidebarHeader>
 
           {sidebarView === 'prompts' ? (
-            <PromptLibrary onUsePrompt={setInput} onNewChat={handleNewChat} />
+            <PromptLibrary onUsePrompt={setInput} />
           ) : (
             <ChatHistory
               sessions={chatHistory}
@@ -668,6 +674,7 @@ export default function ChatInterface({
               onDeleteSession={handleDeleteChat}
               onNewChat={() => handleNewChat(initialRole, initialProgram)}
               onRenameSession={handleRenameChat}
+              onDeleteAllSessions={handleDeleteAllChats}
             />
           )}
 
@@ -676,7 +683,7 @@ export default function ChatInterface({
       <SidebarInset>
         <div className="flex h-screen w-full flex-col bg-background">
           <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm sm:h-16 sm:px-6">
-             <SidebarTrigger className="flex md:hidden" />
+            <SidebarTrigger className="flex md:hidden" />
              <div className="flex items-center gap-2 cursor-pointer" onClick={onParentReset}>
                 <IbGenieLogo className="h-7 w-7 text-primary flex-shrink-0" />
              </div>
@@ -870,3 +877,5 @@ function ThinkingIndicator() {
     </div>
   );
 }
+
+    
