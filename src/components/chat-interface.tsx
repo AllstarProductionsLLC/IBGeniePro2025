@@ -50,7 +50,7 @@ import { useToast } from "@/hooks/use-toast";
 import { renderToString } from 'react-dom/server';
 import { v4 as uuidv4 } from 'uuid';
 import { Input } from "./ui/input";
-import PromptLibrary from "@/components/PromptLibrary";
+import { PromptLibrary } from "@/components/prompt-library";
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -580,7 +580,7 @@ export default function ChatInterface({
             </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
-        <Button variant="outline" size="sm" onClick={() => handleNewChat(role, program)}>
+        <Button variant="outline" size="sm" onClick={() => handleDeleteChat(activeSessionId!)}>
             <Trash2 className="mr-2 h-4 w-4" /> New Chat
         </Button>
     </div>
@@ -599,7 +599,7 @@ export default function ChatInterface({
                 <DropdownMenuItem onClick={onParentReset}>
                     <Home className="mr-2 h-4 w-4" /> Home
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleNewChat(role, program)}>
+                <DropdownMenuItem onClick={() => handleDeleteChat(activeSessionId!)}>
                     <Trash2 className="mr-2 h-4 w-4" /> New Chat
                 </DropdownMenuItem>
                  <DropdownMenuItem onClick={handleCopy}>
@@ -660,7 +660,7 @@ export default function ChatInterface({
           </SidebarHeader>
 
           {sidebarView === 'prompts' ? (
-            <PromptLibrary onUsePrompt={setInput} />
+            <PromptLibrary onUsePrompt={setInput} onNewChat={handleNewChat} />
           ) : (
             <ChatHistory
               sessions={chatHistory}
@@ -677,9 +677,8 @@ export default function ChatInterface({
       <SidebarInset>
         <div className="flex h-screen w-full flex-col bg-background">
           <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm sm:h-16 sm:px-6">
-             <SidebarTrigger className="flex md:hidden" />
+            <SidebarTrigger className="flex md:hidden" />
             <div className="flex flex-1 items-center gap-2 min-w-0">
-               <SidebarTrigger className="hidden md:flex" />
                <div className="flex items-center gap-2 cursor-pointer" onClick={onParentReset}>
                  <IbGenieLogo className="h-7 w-7 text-primary flex-shrink-0" />
               </div>
