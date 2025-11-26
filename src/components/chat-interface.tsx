@@ -10,15 +10,9 @@ import {
   SidebarTrigger,
   SidebarInset,
   SidebarHeader,
-  SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Button } from "./ui/button";
 import {
-  CircleUser,
-  FileUp,
-  Send,
-  Trash2,
-  X,
   Copy,
   FileDown,
   MoreVertical,
@@ -28,17 +22,17 @@ import {
   Home,
   Edit,
   FileText,
-  PanelLeft,
 } from "lucide-react";
 import type { Role, Program } from "@/app/page";
 import { IbGenieLogo } from "./ib-genie-logo";
 import { ChatHistory } from "./chat-history";
-import { Textarea } from "./ui/textarea";
 import { ScrollArea } from "./ui/scroll-area";
-import { Avatar, AvatarFallback } from "./ui/avatar";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { personalities } from "@/lib/personalities";
+import { ChatMessageComponent } from "./chat-message";
+import { ChatInput } from "./chat-input";
+import { ThinkingIndicator } from "./thinking-indicator";
 import { Badge } from "./ui/badge";
 import {
   DropdownMenu,
@@ -52,6 +46,7 @@ import { renderToString } from 'react-dom/server';
 import { v4 as uuidv4 } from 'uuid';
 import { Input } from "./ui/input";
 import { PromptLibrary } from "./prompt-library";
+import { StudentLearningPanel } from "./student-learning-panel";
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -59,24 +54,29 @@ export interface ChatMessage {
 }
 
 export interface ChatSession {
-    id: string;
-    title: string;
-    role: Role;
-    program: Program;
-    messages: ChatMessage[];
-    createdAt: number;
-    attachedFile?: {
-        name: string;
-        type: string;
-        data: string; // base64 encoded
-    }
+  id: string;
+  title: string;
+  role: Role;
+  program: Program;
+  subject?: Subject;
+  messages: ChatMessage[];
+  createdAt: number;
+  attachedFile?: {
+    name: string;
+    type: string;
+    data: string; // base64 encoded
+  }
 }
+
+import { Subject } from "@/lib/subjects";
 
 interface ChatInterfaceProps {
   role: Role;
   program: Program;
+  subject: Subject;
   setRole: (role: Role) => void;
   setProgram: (program: Program) => void;
+  setSubject: (subject: Subject) => void;
   onReset: () => void;
   initialPrompt?: string;
 }
@@ -84,15 +84,20 @@ interface ChatInterfaceProps {
 export default function ChatInterface({
   role: initialRole,
   program: initialProgram,
+  subject: initialSubject,
   setRole: setParentRole,
   setProgram: setParentProgram,
+  setSubject: setParentSubject,
   onReset: onParentReset,
   initialPrompt,
 }: ChatInterfaceProps) {
   const isMobile = useIsMobile();
-  const [sidebarView, setSidebarView] = useState<'prompts' | 'history'>('history');
+  const [sidebarView, setSidebarView] = useState<'prompts' | 'history'>('prompts');
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [learningMode, setLearningMode] = useState<'interactive' | 'advanced'>(
+    initialRole === 'student' ? 'interactive' : 'advanced'
+  );
 
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -101,7 +106,7 @@ export default function ChatInterface({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const dragCounter = useRef(0);
   const { toast } = useToast();
-  
+
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleRenameValue, setTitleRenameValue] = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -109,13 +114,12 @@ export default function ChatInterface({
   const activeSession = chatHistory.find(s => s.id === activeSessionId);
   const role = activeSession?.role || initialRole;
   const program = activeSession?.program || initialProgram;
+  const subject = activeSession?.subject || initialSubject;
   const messages = activeSession?.messages || [];
   const personality = personalities[role][program];
-  
+
   useEffect(() => {
-    if (initialPrompt) {
-      setInput(initialPrompt);
-    }
+    setInput(initialPrompt);
   }, [initialPrompt]);
 
   useEffect(() => {
@@ -131,22 +135,22 @@ export default function ChatInterface({
       if (savedHistory) {
         const parsedHistory: ChatSession[] = JSON.parse(savedHistory);
         setChatHistory(parsedHistory);
-        const latestSession = parsedHistory.sort((a,b) => b.createdAt - a.createdAt)[0];
-        if(latestSession) {
-            setActiveSessionId(latestSession.id);
+        const latestSession = parsedHistory.sort((a, b) => b.createdAt - a.createdAt)[0];
+        if (latestSession) {
+          setActiveSessionId(latestSession.id);
         } else {
-            handleNewChat(initialRole, initialProgram);
+          handleNewChat(initialRole, initialProgram, initialSubject);
         }
       } else {
-        handleNewChat(initialRole, initialProgram);
+        handleNewChat(initialRole, initialProgram, initialSubject);
       }
     } catch (error) {
       console.error("Failed to load chat history from localStorage:", error);
-      handleNewChat(initialRole, initialProgram);
+      handleNewChat(initialRole, initialProgram, initialSubject);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  
+
   // Save to LocalStorage
   useEffect(() => {
     if (chatHistory.length > 0) {
@@ -156,18 +160,18 @@ export default function ChatInterface({
       } catch (error) {
         console.error("Failed to save chat history to localStorage:", error);
         toast({
-            variant: "destructive",
-            title: "Save Failed",
-            description: "Could not save chat history. Your browser might be out of space.",
+          variant: "destructive",
+          title: "Save Failed",
+          description: "Could not save chat history. Your browser might be out of space.",
         });
       }
     } else {
-        localStorage.removeItem("ibGenieChatHistory");
+      localStorage.removeItem("ibGenieChatHistory");
     }
   }, [chatHistory, toast]);
 
   const updateSession = (sessionId: string, updates: Partial<ChatSession>) => {
-    setChatHistory(prev => prev.map(session => 
+    setChatHistory(prev => prev.map(session =>
       session.id === sessionId ? { ...session, ...updates } : session
     ));
   };
@@ -177,14 +181,15 @@ export default function ChatInterface({
       updateSession(activeSessionId, { messages: newMessages });
     }
   };
-  
-  const handleNewChat = (role: Role, program: Program) => {
+
+  const handleNewChat = (role: Role, program: Program, subject: Subject) => {
     const welcomeMessage = personalities[role][program].welcomeMessage;
     const newSession: ChatSession = {
       id: uuidv4(),
       title: "New Chat",
       role,
       program,
+      subject,
       messages: [{ role: "assistant", content: welcomeMessage }],
       createdAt: Date.now(),
     };
@@ -192,42 +197,44 @@ export default function ChatInterface({
     setActiveSessionId(newSession.id);
     setParentRole(role);
     setParentProgram(program);
+    setParentSubject(subject);
   };
-  
+
   const handleDeleteChat = (sessionId: string) => {
     setChatHistory(prev => {
-        const updatedHistory = prev.filter(session => session.id !== sessionId);
-        if (activeSessionId === sessionId) {
-            const nextSession = updatedHistory.sort((a,b) => b.createdAt - a.createdAt)[0];
-            if (nextSession) {
-                setActiveSessionId(nextSession.id);
-            } else {
-                handleNewChat(initialRole, initialProgram);
-            }
+      const updatedHistory = prev.filter(session => session.id !== sessionId);
+      if (activeSessionId === sessionId) {
+        const nextSession = updatedHistory.sort((a, b) => b.createdAt - a.createdAt)[0];
+        if (nextSession) {
+          setActiveSessionId(nextSession.id);
+        } else {
+          handleNewChat(initialRole, initialProgram, initialSubject);
         }
-        if (updatedHistory.length === 0) {
-            handleNewChat(initialRole, initialProgram);
-        }
-        return updatedHistory;
+      }
+      if (updatedHistory.length === 0) {
+        handleNewChat(initialRole, initialProgram);
+        handleNewChat(initialRole, initialProgram, initialSubject);
+      }
+      return updatedHistory;
     });
   };
 
   const handleDeleteAllChats = () => {
     setChatHistory([]);
     setActiveSessionId(null);
-    handleNewChat(initialRole, initialProgram);
+    handleNewChat(initialRole, initialProgram, initialSubject);
     toast({
-        title: "Chat History Cleared",
-        description: "All conversations have been deleted.",
+      title: "Chat History Cleared",
+      description: "All conversations have been deleted.",
     });
   }
 
   const handleRenameChat = (sessionId: string, newTitle: string) => {
-      setChatHistory(prev => prev.map(session => 
-        session.id === sessionId ? { ...session, title: newTitle } : session
-      ));
+    setChatHistory(prev => prev.map(session =>
+      session.id === sessionId ? { ...session, title: newTitle } : session
+    ));
   };
-  
+
   const handleStartTitleEdit = () => {
     if (activeSession && !isMobile) {
       setIsEditingTitle(true);
@@ -251,12 +258,12 @@ export default function ChatInterface({
   }
 
   const fileToBase64 = (file: File): Promise<string> => {
-      return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.readAsDataURL(file);
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = error => reject(error);
-      });
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
   }
 
   const handleFileSelect = async (selectedFile: File) => {
@@ -279,7 +286,7 @@ export default function ChatInterface({
     }
     if (event.target) event.target.value = "";
   };
-  
+
   const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -317,8 +324,8 @@ export default function ChatInterface({
   const triggerFileUpload = () => fileInputRef.current?.click();
 
   const removeFile = () => {
-    if(activeSessionId) {
-        updateSession(activeSessionId, { attachedFile: undefined });
+    if (activeSessionId) {
+      updateSession(activeSessionId, { attachedFile: undefined });
     }
     setFile(null); // Clear the temporary file state
   };
@@ -334,26 +341,29 @@ export default function ChatInterface({
 
     try {
       const history = newMessages
-        .slice(0, -1) 
-        .filter((msg) => msg.role !== 'assistant' || msg.content !== personality.welcomeMessage) 
+        .slice(0, -1)
+        .filter((msg) => msg.role !== 'assistant' || msg.content !== personality.welcomeMessage)
         .map((msg) => ({
           role: msg.role === 'assistant' ? 'model' : 'user',
           parts: [{ text: msg.content }],
         }));
-      
+
       const formData = new FormData();
       formData.append("message", input);
       formData.append("role", role);
       formData.append("program", program);
+      if (subject) {
+        formData.append("subject", subject);
+      }
       formData.append("history", JSON.stringify(history));
-      
+
       const fileToSend = file || (activeSession.attachedFile ? new File([Buffer.from(activeSession.attachedFile.data, 'base64')], activeSession.attachedFile.name, { type: activeSession.attachedFile.type }) : null);
 
       if (fileToSend) {
         formData.append("file", fileToSend);
       }
-      
-      if(activeSession.title === "New Chat" && activeSession.messages.length <= 1) { 
+
+      if (activeSession.title === "New Chat" && activeSession.messages.length <= 1) {
         const title = input.split(' ').slice(0, 5).join(' ') + '...';
         handleRenameChat(activeSession.id, title);
       }
@@ -364,7 +374,7 @@ export default function ChatInterface({
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({error: 'Unknown server error'}));
+        const errorData = await response.json().catch(() => ({ error: 'Unknown server error' }));
         throw new Error(errorData.error || "Error from server");
       }
 
@@ -413,12 +423,12 @@ export default function ChatInterface({
         ))}
       </div>
     );
-  
+
     const blobHtml = new Blob([htmlString], { type: 'text/html' });
     const blobText = new Blob([plainText], { type: 'text/plain' });
     const clipboardItem = new ClipboardItem({
-        'text/html': blobHtml,
-        'text/plain': blobText,
+      'text/html': blobHtml,
+      'text/plain': blobText,
     });
 
     navigator.clipboard.write([clipboardItem]).then(
@@ -485,20 +495,20 @@ export default function ChatInterface({
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
-  
+
   const handleExportWord = () => {
     const MimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Chat Export</title></head><body>`;
     const footer = "</body></html>";
     const htmlContent = renderToString(
-       <div>
+      <div>
         <h1>IBGenie Chat Export</h1>
         {messages.map((msg, index) => (
           <div key={index} style={{ marginBottom: '16px' }}>
             <p style={{ fontWeight: 'bold' }}>
               {msg.role === 'assistant' ? 'IBGenie' : 'User'}:
             </p>
-             <div dangerouslySetInnerHTML={{ __html: renderToString(<ReactMarkdown>{msg.content}</ReactMarkdown>)}} />
+            <div dangerouslySetInnerHTML={{ __html: renderToString(<ReactMarkdown>{msg.content}</ReactMarkdown>) }} />
           </div>
         ))}
       </div>
@@ -514,7 +524,7 @@ export default function ChatInterface({
     const blob = new Blob([plainText], { type: 'text/plain;charset=utf-8' });
     downloadFile(blob, `${activeSession.title.replace(/ /g, '_')}.txt`);
   };
-  
+
   const handleExportPdf = () => {
     const htmlContent = getHtmlChat();
     const printWindow = window.open('', '_blank');
@@ -524,14 +534,14 @@ export default function ChatInterface({
       printWindow.focus();
       printWindow.print();
     } else {
-        toast({
-            variant: "destructive",
-            title: "Export Failed",
-            description: "Could not open print window. Please disable your pop-up blocker.",
-        });
+      toast({
+        variant: "destructive",
+        title: "Export Failed",
+        description: "Could not open print window. Please disable your pop-up blocker.",
+      });
     }
   };
-  
+
   const renderHeaderTitle = () => {
     if (isMobile) {
       return (
@@ -563,73 +573,73 @@ export default function ChatInterface({
   }
 
   const renderDesktopHeaderActions = () => (
-     <div className="ml-auto hidden items-center gap-2 md:flex">
-        <Button variant="outline" size="sm" onClick={onParentReset}>
-            <Home className="mr-2 h-4 w-4" />
-            Home
-        </Button>
-        <Button variant="outline" size="sm" onClick={handleCopy}>
-            <Copy className="mr-2 h-4 w-4" /> Copy
-        </Button>
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-                <FileDown className="mr-2 h-4 w-4" /> Export
-            </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-            <DropdownMenuItem onClick={handleExportWord}>
-                Word Document (.doc)
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleExportTxt}>
-                Plain Text (.txt)
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleExportPdf}>
-                PDF
-            </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
+    <div className="ml-auto hidden items-center gap-2 md:flex">
+      <Button variant="outline" size="sm" onClick={onParentReset}>
+        <Home className="mr-2 h-4 w-4" />
+        Home
+      </Button>
+      <Button variant="outline" size="sm" onClick={handleCopy}>
+        <Copy className="mr-2 h-4 w-4" /> Copy
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm">
+            <FileDown className="mr-2 h-4 w-4" /> Export
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem onClick={handleExportWord}>
+            Word Document (.doc)
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleExportTxt}>
+            Plain Text (.txt)
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleExportPdf}>
+            PDF
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 
   const renderMobileHeaderActions = () => (
-     <div className="ml-auto flex items-center gap-2 md:hidden">
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                    <MoreVertical className="h-5 w-5" />
-                    <span className="sr-only">More options</span>
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={onParentReset}>
-                    <Home className="mr-2 h-4 w-4" /> Home
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleNewChat(initialRole, initialProgram)}>
-                    New Chat
-                </DropdownMenuItem>
-                 <DropdownMenuItem onClick={handleCopy}>
-                    <Copy className="mr-2 h-4 w-4" /> Copy Chat
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleExportWord}>
-                    <FileDown className="mr-2 h-4 w-4" /> Export as Word
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportTxt}>
-                     <FileText className="mr-2 h-4 w-4" /> Export as Text
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportPdf}>
-                    <FileDown className="mr-2 h-4 w-4" /> Export as PDF
-                </DropdownMenuItem>
-                 <DropdownMenuSeparator />
-                 <DropdownMenuItem onClick={() => setSidebarView('history')}>
-                    <MessageSquare className="mr-2 h-4 w-4" /> View History
-                </DropdownMenuItem>
-                 <DropdownMenuItem onClick={() => setSidebarView('prompts')}>
-                    <Sparkles className="mr-2 h-4 w-4" /> View Prompts
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
+    <div className="ml-auto flex items-center gap-2 md:hidden">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon">
+            <MoreVertical className="h-5 w-5" />
+            <span className="sr-only">More options</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={onParentReset}>
+            <Home className="mr-2 h-4 w-4" /> Home
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleNewChat(initialRole, initialProgram, initialSubject)}>
+            New Chat
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleCopy}>
+            <Copy className="mr-2 h-4 w-4" /> Copy Chat
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleExportWord}>
+            <FileDown className="mr-2 h-4 w-4" /> Export as Word
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleExportTxt}>
+            <FileText className="mr-2 h-4 w-4" /> Export as Text
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleExportPdf}>
+            <FileDown className="mr-2 h-4 w-4" /> Export as PDF
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setSidebarView('history')}>
+            <MessageSquare className="mr-2 h-4 w-4" /> View History
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setSidebarView('prompts')}>
+            <Sparkles className="mr-2 h-4 w-4" /> View Prompts
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 
@@ -643,36 +653,42 @@ export default function ChatInterface({
           <SidebarHeader className="p-2 pb-0">
             <h2 className="px-2 text-lg font-semibold tracking-tight font-headline">IBGenie</h2>
             <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-md">
-                 <Button
-                    variant={sidebarView === 'prompts' ? 'primary' : 'ghost'}
-                    size="sm"
-                    className="h-8"
-                    onClick={() => setSidebarView('prompts')}
-                 >
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Prompts
-                </Button>
-                <Button
-                    variant={sidebarView === 'history' ? 'primary' : 'ghost'}
-                    size="sm"
-                    className="h-8"
-                    onClick={() => setSidebarView('history')}
-                >
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                    History
-                </Button>
+              <Button
+                variant={sidebarView === 'prompts' ? 'primary' : 'ghost'}
+                size="sm"
+                className="h-8"
+                onClick={() => setSidebarView('prompts')}
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                Prompts
+              </Button>
+              <Button
+                variant={sidebarView === 'history' ? 'primary' : 'ghost'}
+                size="sm"
+                className="h-8"
+                onClick={() => setSidebarView('history')}
+              >
+                <MessageSquare className="mr-2 h-4 w-4" />
+                History
+              </Button>
             </div>
           </SidebarHeader>
 
           {sidebarView === 'prompts' ? (
-            <PromptLibrary onUsePrompt={setInput} onNewChat={handleNewChat} />
+            <PromptLibrary
+              onUsePrompt={setInput}
+              onNewChat={handleNewChat}
+              currentRole={role}
+              currentProgram={program}
+              currentSubject={subject}
+            />
           ) : (
             <ChatHistory
               sessions={chatHistory}
               activeSessionId={activeSessionId}
               onSelectSession={setActiveSessionId}
               onDeleteSession={handleDeleteChat}
-              onNewChat={() => handleNewChat(initialRole, initialProgram)}
+              onNewChat={() => handleNewChat(initialRole, initialProgram, initialSubject)}
               onRenameSession={handleRenameChat}
               onDeleteAllSessions={handleDeleteAllChats}
             />
@@ -684,9 +700,9 @@ export default function ChatInterface({
         <div className="flex h-screen w-full flex-col bg-background">
           <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm sm:h-16 sm:px-6">
             <SidebarTrigger className="flex md:hidden" />
-             <div className="flex items-center gap-2 cursor-pointer" onClick={onParentReset}>
-                <IbGenieLogo className="h-7 w-7 text-primary flex-shrink-0" />
-             </div>
+            <div className="flex items-center gap-2 cursor-pointer" onClick={onParentReset}>
+              <IbGenieLogo className="h-7 w-7 text-primary flex-shrink-0" />
+            </div>
             <div className="flex flex-1 items-center gap-2 min-w-0">
               {renderHeaderTitle()}
             </div>
@@ -695,25 +711,31 @@ export default function ChatInterface({
           </header>
 
           <main className="flex flex-1 flex-col overflow-hidden">
-              <ScrollArea className="flex-1">
-                <div className="p-4 md:p-6">
-                  <div className="mx-auto max-w-4xl space-y-6">
-                    {messages.map((message, index) => (
-                      <ChatMessageComponent key={index} {...message} />
-                    ))}
-                    {isLoading && <ThinkingIndicator />}
+            {role === 'student' && learningMode === 'interactive' ? (
+              <StudentLearningPanel
+                subject={subject}
+                onToggleMode={() => setLearningMode('advanced')}
+              />
+            ) : (
+              <>
+                <ScrollArea className="flex-1">
+                  <div className="p-4 md:p-6">
+                    <div className="mx-auto max-w-4xl space-y-6">
+                      {messages.map((message, index) => (
+                        <ChatMessageComponent key={index} {...message} />
+                      ))}
+                      {isLoading && <ThinkingIndicator />}
+                    </div>
                   </div>
-                </div>
-              </ScrollArea>
-              <div
-                className="border-t bg-background p-4 md:p-6"
-                onDragEnter={handleDragEnter}
-                onDragLeave={handleDragLeave}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-              >
-                <div className="mx-auto max-w-4xl relative">
-                   {isDragging && (
+                </ScrollArea>
+                <div
+                  className="border-t bg-background p-4 md:p-6"
+                  onDragEnter={handleDragEnter}
+                  onDragLeave={handleDragLeave}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                >
+                  {isDragging && (
                     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-primary bg-background/80 backdrop-blur-sm">
                       <Upload className="h-8 w-8 text-primary" />
                       <p className="mt-2 text-sm font-semibold text-primary">
@@ -721,65 +743,21 @@ export default function ChatInterface({
                       </p>
                     </div>
                   )}
-                  {(file || activeSession?.attachedFile) && (
-                    <div className="mb-2 flex items-center justify-center">
-                      <Badge variant="secondary">
-                        {file?.name || activeSession?.attachedFile?.name}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="ml-2 h-4 w-4"
-                          onClick={removeFile}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </Badge>
-                    </div>
-                  )}
-                  <div className="relative">
-                    <Textarea
-                      placeholder="Ask IBGenie anything..."
-                      className="min-h-12 resize-none pr-24 md:pr-32"
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSend();
-                        }
-                      }}
-                      disabled={isLoading}
-                    />
-                     <div className="absolute bottom-2.5 right-3 flex items-center gap-1">
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileUpload}
-                        className="hidden"
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={triggerFileUpload}
-                        disabled={isLoading}
-                      >
-                        <FileUp className="h-5 w-5" />
-                      </Button>
-                      <Button
-                        onClick={handleSend}
-                        size="icon"
-                        disabled={isLoading || !input.trim()}
-                      >
-                        <Send className="h-5 w-5" />
-                      </Button>
-                    </div>
-                  </div>
-                  <p className="mt-2 text-center text-xs text-muted-foreground">
-                    Use AI responsibly. Acknowledge where AI assisted you. Follow
-                    your school’s IB academic integrity policy.
-                  </p>
+                  <ChatInput
+                    input={input}
+                    setInput={setInput}
+                    isLoading={isLoading}
+                    handleSend={handleSend}
+                    handleFileUpload={handleFileUpload}
+                    triggerFileUpload={triggerFileUpload}
+                    fileInputRef={fileInputRef}
+                    file={file}
+                    attachedFile={activeSession?.attachedFile}
+                    removeFile={removeFile}
+                  />
                 </div>
-              </div>
+              </>
+            )}
           </main>
         </div>
       </SidebarInset>
@@ -787,97 +765,7 @@ export default function ChatInterface({
   );
 }
 
-function ChatMessageComponent({ role, content }: { role: 'user' | 'assistant'; content: string }) {
-  const { toast } = useToast();
-  const isAssistant = role === "assistant";
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(content).then(
-      () => {
-        toast({
-          title: "Copied!",
-          description: "Message copied to clipboard.",
-        });
-      },
-      (err) => {
-        console.error("Failed to copy: ", err);
-        toast({
-          variant: "destructive",
-          title: "Copy Failed",
-          description: "Could not copy to clipboard. Please try again.",
-        });
-      }
-    );
-  };
 
-  return (
-    <div
-      className={cn(
-        "group flex items-start gap-4",
-        !isAssistant && "justify-end"
-      )}
-    >
-      {isAssistant && (
-        <Avatar className="flex-shrink-0">
-          <AvatarFallback>
-            <IbGenieLogo className="h-6 w-6" />
-          </AvatarFallback>
-        </Avatar>
-      )}
-      <div
-        className={cn(
-          "max-w-[85%] rounded-lg p-3 text-sm md:max-w-[75%]",
-          isAssistant
-            ? "bg-muted order-2"
-            : "bg-primary text-primary-foreground order-1"
-        )}
-      >
-        <div className="prose prose-sm max-w-none text-current">
-          <ReactMarkdown
-            components={{
-              p: ({ node, ...props }) => (
-                <p className="mb-2 last:mb-0" {...props} />
-              ),
-            }}
-          >
-            {content}
-          </ReactMarkdown>
-        </div>
-      </div>
-      {!isAssistant && (
-        <Avatar className="flex-shrink-0 order-2">
-            <AvatarFallback>
-                <CircleUser />
-            </AvatarFallback>
-        </Avatar>
-      )}
-      <div className={cn("flex-shrink-0 self-center order-3", isAssistant ? "" : "-order-1")}>
-        <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100"
-            onClick={handleCopy}
-        >
-            <Copy className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  );
-}
 
-function ThinkingIndicator() {
-  return (
-    <div className="flex items-center justify-center p-4">
-      <div className="flex items-center gap-2">
-        <IbGenieLogo className="h-8 w-8 animate-pulse-glow text-primary" />
-        <span className="font-semibold text-muted-foreground animate-shimmer bg-clip-text text-transparent bg-[linear-gradient(110deg,theme(colors.muted.foreground),45%,theme(colors.foreground),55%,theme(colors.muted.foreground))] bg-[length:250%_100%]">
-          IBGenie is thinking...
-        </span>
-      </div>
-    </div>
-  );
-}
 
-    
-
-    

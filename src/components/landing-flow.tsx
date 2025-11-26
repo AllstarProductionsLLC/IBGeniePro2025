@@ -7,23 +7,33 @@ import { School, User, ArrowLeft } from "lucide-react";
 import type { Role, Program } from "@/app/page";
 import { IbGenieLogo } from "./ib-genie-logo";
 import { cn } from "@/lib/utils";
+import { SUBJECTS, Subject } from "@/lib/subjects";
 
 interface LandingFlowProps {
   role: Role | null;
+  program: Program | null;
   onSelectRole: Dispatch<SetStateAction<Role | null>>;
   onSelectProgram: Dispatch<SetStateAction<Program | null>>;
+  onSelectSubject: Dispatch<SetStateAction<Subject | null>>;
 }
 
-export function LandingFlow({ role, onSelectRole, onSelectProgram }: LandingFlowProps) {
-  const handleGoBack = () => {
+export function LandingFlow({ role, program, onSelectRole, onSelectProgram, onSelectSubject }: LandingFlowProps) {
+  const handleGoBackRole = () => {
     onSelectRole(null);
+  }
+
+  const handleGoBackProgram = () => {
+    onSelectProgram(null);
   }
 
   const renderContent = () => {
     if (!role) {
       return <RoleSelection onSelectRole={onSelectRole} />;
     }
-    return <ProgramSelection onSelectProgram={onSelectProgram} onBack={handleGoBack} />;
+    if (!program) {
+      return <ProgramSelection onSelectProgram={onSelectProgram} onBack={handleGoBackRole} />;
+    }
+    return <SubjectSelection program={program} onSelectSubject={onSelectSubject} onBack={handleGoBackProgram} />;
   };
 
   return (
@@ -94,6 +104,36 @@ function ProgramSelection({ onSelectProgram, onBack }: { onSelectProgram: (progr
             </div>
           </Button>
         ))}
+        <Button variant="ghost" onClick={onBack} className="mt-4">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SubjectSelection({ program, onSelectSubject, onBack }: { program: Program, onSelectSubject: (subject: Subject) => void, onBack: () => void }) {
+  const subjects = SUBJECTS[program];
+
+  return (
+    <Card className="relative">
+      <CardHeader>
+        <CardTitle className="font-headline text-2xl">Select Your Subject</CardTitle>
+        <CardDescription>Choose a subject to get specialized help.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 gap-2 max-h-[60vh] overflow-y-auto pr-2">
+          {subjects.map((subject) => (
+            <Button
+              key={subject}
+              variant="outline"
+              className="w-full justify-start text-left"
+              onClick={() => onSelectSubject(subject)}
+            >
+              {subject}
+            </Button>
+          ))}
+        </div>
         <Button variant="ghost" onClick={onBack} className="mt-4">
           <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
         </Button>

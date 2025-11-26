@@ -1,4 +1,3 @@
-
 export type Role = "student" | "teacher";
 export type Program = "pyp" | "myp" | "dp";
 
@@ -7,7 +6,7 @@ export interface Personality {
   systemPrompt: string;
 }
 
-export const personalities: Record<Role, Record<Program, Personality>> = {
+const basePersonalities: Record<Role, Record<Program, Personality>> = {
   student: {
     pyp: {
       welcomeMessage:
@@ -49,3 +48,21 @@ export const personalities: Record<Role, Record<Program, Personality>> = {
     },
   },
 };
+
+export function getPersonality(role: Role, program: Program, subject?: string): Personality {
+  const base = basePersonalities[role][program];
+
+  if (!subject) {
+    return base;
+  }
+
+  const subjectContext = `You are specifically assisting with the subject: ${subject}. Focus your responses on this subject area, using appropriate terminology and examples relevant to ${subject} in the ${program.toUpperCase()}.`;
+
+  return {
+    welcomeMessage: `${base.welcomeMessage} I see we are focusing on ${subject}.`,
+    systemPrompt: `${base.systemPrompt}\n\n${subjectContext}`,
+  };
+}
+
+// Keep this for backward compatibility if needed, or remove if refactoring completely
+export const personalities = basePersonalities;

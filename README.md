@@ -48,15 +48,15 @@ To use the AI functionalities, you need to set your API key as an environment va
 
 The AI model can be easily changed in the backend.
 
-1.  **Open the Chat Interface File**: Navigate to the file located at `src/components/chat-interface.tsx`.
+1.  **Open the API Route File**: Navigate to the file located at `src/app/api/chat/route.ts`.
 2.  **Find the `MODEL_NAME` Constant**: At the top of the file, you will find a constant named `MODEL_NAME`.
     ```typescript
-    const MODEL_NAME = "gemini-1.5-flash";
+    const MODEL_NAME = "gemini-2.5-flash-preview-09-2025";
     ```
-3.  **Update the Model**: To change the model, simply replace the current value (e.g., `"gemini-1.5-flash"`) with the name of the model you want to use. You can find a list of available models in the official documentation for your AI provider (e.g., Google's Gemini documentation).
-
-    For example, to switch to Gemini 2.5 Pro, you would change the line to:
+3.  **Update the Model**: To change the model, simply replace the current value with the name of the model you want to use.
+    
+    For example, to switch to Gemini 1.5 Pro, you would change the line to:
     ```typescript
-    const MODEL_NAME = "gemini-2.5-pro";
+    const MODEL_NAME = "gemini-1.5-pro";
     ```
-4.  **Using a Different Provider (e.g., ChatGPT)**: If you want to switch to a different AI provider, you will need to install their client library and update the code in `src/components/chat-interface.tsx` to use the new library for initializing the model and sending messages. You will also need to set a new secret for the corresponding API key (e.g., `OPENAI_API_KEY`).
+4.  **Using a Different Provider (e.g., ChatGPT)**: If you want to switch to a different AI provider, you will need to install their client library and update the code in `src/app/api/chat/route.ts` to use the new library.
