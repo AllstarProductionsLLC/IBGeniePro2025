@@ -7,6 +7,7 @@ import { Button } from "./ui/button";
 import { IbGenieLogo } from "./ib-genie-logo";
 import { CircleUser, Copy } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export interface ChatMessage {
     role: 'user' | 'assistant';
@@ -60,6 +61,7 @@ export function ChatMessageComponent({ role, content }: ChatMessage) {
             >
                 <div className="prose prose-sm max-w-none text-current">
                     <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
                         components={{
                             p: ({ node, ...props }) => (
                                 <p className="mb-2 last:mb-0" {...props} />

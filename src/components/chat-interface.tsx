@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useRef, ChangeEvent, DragEvent } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   Sidebar,
   SidebarContent,
@@ -103,7 +104,7 @@ export default function ChatInterface({
   const [isLoading, setIsLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounter = useRef(0);
   const { toast } = useToast();
 
@@ -119,7 +120,7 @@ export default function ChatInterface({
   const personality = personalities[role][program];
 
   useEffect(() => {
-    setInput(initialPrompt);
+    setInput(initialPrompt || "");
   }, [initialPrompt]);
 
   useEffect(() => {
@@ -212,7 +213,6 @@ export default function ChatInterface({
         }
       }
       if (updatedHistory.length === 0) {
-        handleNewChat(initialRole, initialProgram);
         handleNewChat(initialRole, initialProgram, initialSubject);
       }
       return updatedHistory;
@@ -416,7 +416,7 @@ export default function ChatInterface({
             </p>
             <div
               dangerouslySetInnerHTML={{
-                __html: renderToString(<ReactMarkdown>{msg.content}</ReactMarkdown>),
+                __html: renderToString(<ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>),
               }}
             />
           </div>
@@ -475,7 +475,7 @@ export default function ChatInterface({
               </p>
               <div
                 dangerouslySetInnerHTML={{
-                  __html: renderToString(<ReactMarkdown>{msg.content}</ReactMarkdown>),
+                  __html: renderToString(<ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>),
                 }}
               />
             </div>
@@ -508,7 +508,7 @@ export default function ChatInterface({
             <p style={{ fontWeight: 'bold' }}>
               {msg.role === 'assistant' ? 'IBGenie' : 'User'}:
             </p>
-            <div dangerouslySetInnerHTML={{ __html: renderToString(<ReactMarkdown>{msg.content}</ReactMarkdown>) }} />
+            <div dangerouslySetInnerHTML={{ __html: renderToString(<ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>) }} />
           </div>
         ))}
       </div>

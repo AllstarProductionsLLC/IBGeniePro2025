@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // This is a temporary client-side implementation.
     if (typeof window !== 'undefined') {
       const savedPrompts = JSON.parse(localStorage.getItem('savedPrompts') || '[]');
-      const prompt = savedPrompts.find((p: any) => p.id === id); 
+      const prompt = savedPrompts.find((p: any) => p.id === id);
 
       if (prompt) {
         return NextResponse.json(prompt);
@@ -24,9 +24,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const updatedPromptData = await request.json();
 
     // This is a temporary client-side implementation.
@@ -52,9 +52,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // This is a temporary client-side implementation.
     if (typeof window !== 'undefined') {

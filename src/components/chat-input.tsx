@@ -13,7 +13,7 @@ interface ChatInputProps {
     handleSend: () => void;
     handleFileUpload: (event: ChangeEvent<HTMLInputElement>) => void;
     triggerFileUpload: () => void;
-    fileInputRef: RefObject<HTMLInputElement | null>;
+    fileInputRef: RefObject<HTMLInputElement>;
     file: File | null;
     attachedFile?: { name: string };
     removeFile: () => void;
