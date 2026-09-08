@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "build:portable": "node scripts/build-portable.mjs",
+    "curriculum:check": "node scripts/check-curriculum.mjs"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.0.0",
@@ -43,7 +45,7 @@
     "firebase": "^11.9.1",
     "genkit": "^1.0.0",
     "lucide-react": "^0.475.0",
-    "next": "15.3.3",
+    "next": "15.5.25",
     "papaparse": "^5.4.1",
     "patch-package": "^8.0.0",
     "react": "^18.3.1",
@@ -59,6 +61,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@next/swc-wasm-nodejs": "15.5.25",
     "@tailwindcss/typography": "^0.5.15",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",

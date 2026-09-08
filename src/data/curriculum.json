@@ -5,9 +5,7 @@
     {
       "id": "ee-2027",
       "title": "Extended essay",
-      "subjects": [
-        "Extended essay"
-      ],
+      "subjects": ["Extended essay"],
       "firstTeaching": 2025,
       "firstAssessment": 2027,
       "summary": "Choose a subject-focused or interdisciplinary research pathway. The revised assessment model totals 30 marks. Use the guide for your examination session with your supervisor.",
@@ -16,9 +14,7 @@
     {
       "id": "cs-2027",
       "title": "Computer science",
-      "subjects": [
-        "Computer science"
-      ],
+      "subjects": ["Computer science"],
       "firstTeaching": 2025,
       "firstAssessment": 2027,
       "summary": "Two themes connect computing concepts with computational thinking and problem-solving. The new course includes machine learning and a computational solution. Consult the guide for assessment weights.",
@@ -27,9 +23,7 @@
     {
       "id": "psych-2027",
       "title": "Psychology",
-      "subjects": [
-        "Psychology"
-      ],
+      "subjects": ["Psychology"],
       "firstTeaching": 2025,
       "firstAssessment": 2027,
       "summary": "Concepts, content and contexts are connected through the course. The internal assessment becomes a research proposal at both SL and HL.",
@@ -38,10 +32,7 @@
     {
       "id": "arts-design-2027",
       "title": "Visual arts and design technology",
-      "subjects": [
-        "Visual arts",
-        "Design technology"
-      ],
+      "subjects": ["Visual arts", "Design technology"],
       "firstTeaching": 2025,
       "firstAssessment": 2027,
       "summary": "Revised courses are first assessed in May 2027. Follow the relevant course link in the official directory to select your subject brief.",
@@ -50,9 +41,7 @@
     {
       "id": "history-2028",
       "title": "History",
-      "subjects": [
-        "History"
-      ],
+      "subjects": ["History"],
       "firstTeaching": 2026,
       "firstAssessment": 2028,
       "summary": "Paired case studies, global themes and regional in-depth topics reshape the course. Assessment changes begin with May 2028, not the 2027 cohort.",
@@ -61,10 +50,7 @@
     {
       "id": "math-2029",
       "title": "Mathematics: AA and AI",
-      "subjects": [
-        "Mathematics: AA",
-        "Mathematics: AI"
-      ],
+      "subjects": ["Mathematics: AA", "Mathematics: AI"],
       "firstTeaching": 2027,
       "firstAssessment": 2029,
       "summary": "The next mathematics courses begin teaching in 2027, with first assessment in May 2029. Earlier cohorts should continue with their existing course guides.",

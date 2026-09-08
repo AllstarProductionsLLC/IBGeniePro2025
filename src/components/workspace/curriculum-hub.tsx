@@ -1,6 +1,144 @@
 "use client";
-import {useState} from "react";import {BookOpen,CalendarDays,Search,ShieldCheck} from "lucide-react";
-import {Input} from "@/components/ui/input";import {cohortUpdates,curriculum,curriculumIsStale,officialLinks} from "@/lib/curriculum";import type {Profile} from "@/lib/workspace";import {Picker,SourceLink,type Update} from "./shared";
-export function CurriculumHub({profile,update}:{profile:Profile;update:Update}){const[search,setSearch]=useState(""),[filter,setFilter]=useState("all");const updates=cohortUpdates(profile.examYear).filter(u=>(u.title+" "+u.summary).toLowerCase().includes(search.toLowerCase())&&(filter==="all"||(filter==="current"?u.applies:!u.applies)));
-return <><div className="page-heading"><div><span className="eyebrow">OFFICIAL SOURCES. CLEARER CONTEXT.</span><h1>The right guide for your cohort.</h1><p>Know what is changing, when it applies, and where to check.</p></div><span className={"status-badge "+(curriculumIsStale()?"review-due":"")}><ShieldCheck size={16}/>{curriculumIsStale()?"Source review due":"Sources checked "+curriculum.checkedAt}</span></div><div className="curriculum-intro panel"><BookOpen size={30}/><div><h2>Your examination session matters.</h2><p>This is a dated snapshot of public IB updates, not a live feed or the complete licensed syllabuses. Confirm the current subject guide, school deadlines and any retake arrangements with your teacher or coordinator.</p>{profile.program!=="dp"&&<p>You are in {profile.program.toUpperCase()}. The transitions below are for DP; use the MYP or PYP links for your programme.</p>}</div></div><div className="library-toolbar"><div className="search-field"><Search size={18}/><Input aria-label="Search curriculum updates" placeholder="Search a course or change…" value={search} onChange={e=>setSearch(e.target.value)}/></div><Picker label="Examination year" value={String(profile.examYear)} onChange={v=>update(s=>({...s,profile:{...s.profile,examYear:Number(v)}}))} options={Array.from({length:15},(_,i)=>String(2026+i))}/><Picker label="Course transition filter" value={filter} onChange={setFilter} options={[{value:"all",label:"All course transitions"},{value:"current",label:"Introduced by my exam year"},{value:"future",label:"Future transitions"}]}/></div><div className="curriculum-grid">{updates.map(u=><article className="panel curriculum-card" key={u.id}><div className="section-heading"><span className="resource-kind">DP COURSE UPDATE</span><span className={"cohort-badge "+(u.applies?"applies":"")}>{u.applies?"Introduced by "+profile.examYear:"From "+u.firstAssessment}</span></div><h2>{u.title}</h2><div className="curriculum-dates"><span><CalendarDays size={15}/>Teaching: {u.firstTeaching}</span><span>First assessment: May {u.firstAssessment}</span></div><p>{u.summary}</p><SourceLink href={u.url}>Read the IB update</SourceLink></article>)}</div>{!updates.length&&<p className="empty-state">No updates match this search. The official directory includes additional subjects.</p>}<div className="section-heading official-heading"><h2>Go straight to the source.</h2><span className="muted-note">Public guidance from ibo.org</span></div><div className="official-links">{officialLinks.map(l=><article className="panel" key={l.url}><h3><SourceLink href={l.url}>{l.title}</SourceLink></h3><p>{l.description}</p></article>)}</div></>;
+import { useState } from "react";
+import { BookOpen, CalendarDays, Search, ShieldCheck } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  cohortUpdates,
+  curriculum,
+  curriculumIsStale,
+  officialLinks,
+} from "@/lib/curriculum";
+import type { Profile } from "@/lib/workspace";
+import { Picker, SourceLink, type Update } from "./shared";
+export function CurriculumHub({
+  profile,
+  update,
+}: {
+  profile: Profile;
+  update: Update;
+}) {
+  const [search, setSearch] = useState(""),
+    [filter, setFilter] = useState("all");
+  const updates = cohortUpdates(profile.examYear).filter(
+    (u) =>
+      (u.title + " " + u.summary)
+        .toLowerCase()
+        .includes(search.toLowerCase()) &&
+      (filter === "all" || (filter === "current" ? u.applies : !u.applies)),
+  );
+  return (
+    <>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">OFFICIAL SOURCES. CLEARER CONTEXT.</span>
+          <h1>The right guide for your cohort.</h1>
+          <p>Know what is changing, when it applies, and where to check.</p>
+        </div>
+        <span
+          className={
+            "status-badge " + (curriculumIsStale() ? "review-due" : "")
+          }
+        >
+          <ShieldCheck size={16} />
+          {curriculumIsStale()
+            ? "Source review due"
+            : "Sources checked " + curriculum.checkedAt}
+        </span>
+      </div>
+      <div className="curriculum-intro panel">
+        <BookOpen size={30} />
+        <div>
+          <h2>Your examination session matters.</h2>
+          <p>
+            This is a dated snapshot of public IB updates, not a live feed or
+            the complete licensed syllabuses. Confirm the current subject guide,
+            school deadlines and any retake arrangements with your teacher or
+            coordinator.
+          </p>
+          {profile.program !== "dp" && (
+            <p>
+              You are in {profile.program.toUpperCase()}. The transitions below
+              are for DP; use the MYP or PYP links for your programme.
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="library-toolbar">
+        <div className="search-field">
+          <Search size={18} />
+          <Input
+            aria-label="Search curriculum updates"
+            placeholder="Search a course or change…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <Picker
+          label="Examination year"
+          value={String(profile.examYear)}
+          onChange={(v) =>
+            update((s) => ({
+              ...s,
+              profile: { ...s.profile, examYear: Number(v) },
+            }))
+          }
+          options={Array.from({ length: 15 }, (_, i) => String(2026 + i))}
+        />
+        <Picker
+          label="Course transition filter"
+          value={filter}
+          onChange={setFilter}
+          options={[
+            { value: "all", label: "All course transitions" },
+            { value: "current", label: "Introduced by my exam year" },
+            { value: "future", label: "Future transitions" },
+          ]}
+        />
+      </div>
+      <div className="curriculum-grid">
+        {updates.map((u) => (
+          <article className="panel curriculum-card" key={u.id}>
+            <div className="section-heading">
+              <span className="resource-kind">DP COURSE UPDATE</span>
+              <span className={"cohort-badge " + (u.applies ? "applies" : "")}>
+                {u.applies
+                  ? "Introduced by " + profile.examYear
+                  : "From " + u.firstAssessment}
+              </span>
+            </div>
+            <h2>{u.title}</h2>
+            <div className="curriculum-dates">
+              <span>
+                <CalendarDays size={15} />
+                Teaching: {u.firstTeaching}
+              </span>
+              <span>First assessment: May {u.firstAssessment}</span>
+            </div>
+            <p>{u.summary}</p>
+            <SourceLink href={u.url}>Read the IB update</SourceLink>
+          </article>
+        ))}
+      </div>
+      {!updates.length && (
+        <p className="empty-state">
+          No updates match this search. The official directory includes
+          additional subjects.
+        </p>
+      )}
+      <div className="section-heading official-heading">
+        <h2>Go straight to the source.</h2>
+        <span className="muted-note">Public guidance from ibo.org</span>
+      </div>
+      <div className="official-links">
+        {officialLinks.map((l) => (
+          <article className="panel" key={l.url}>
+            <h3>
+              <SourceLink href={l.url}>{l.title}</SourceLink>
+            </h3>
+            <p>{l.description}</p>
+          </article>
+        ))}
+      </div>
+    </>
+  );
 }

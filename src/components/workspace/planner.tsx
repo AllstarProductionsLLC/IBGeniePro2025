@@ -1,13 +1,365 @@
 "use client";
-import {useEffect,useRef,useState} from "react";import {CalendarDays,Check,Download,Pause,Play,Plus,RotateCcw,Trash2} from "lucide-react";
-import {Button} from "@/components/ui/button";import {Input} from "@/components/ui/input";import {Checkbox} from "@/components/ui/checkbox";import {Dialog,DialogContent,DialogDescription,DialogHeader,DialogTitle} from "@/components/ui/dialog";
-import {downloadText,localDate,taskSchema,uid,type Task,type WorkspaceState} from "@/lib/workspace";import {EmptyState,ErrorNote,Field,Picker,type Update} from "./shared";
-function calendarText(tasks:Task[]){const escape=(s:string)=>s.replace(/\\/g,"\\\\").replace(/\r?\n/g,"\\n").replace(/,/g,"\\,").replace(/;/g,"\\;");const stamp=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d{3}/,"");return["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//IBGenie Pro//Study planner//EN","CALSCALE:GREGORIAN",...tasks.flatMap(t=>{const end=new Date(t.due+"T12:00:00Z");end.setUTCDate(end.getUTCDate()+1);return["BEGIN:VEVENT","UID:"+escape(t.id)+"@ibgenie","DTSTAMP:"+stamp,"DTSTART;VALUE=DATE:"+t.due.replace(/-/g,""),"DTEND;VALUE=DATE:"+end.toISOString().slice(0,10).replace(/-/g,""),"SUMMARY:"+escape(t.title),"DESCRIPTION:"+escape(t.subject+" · "+t.kind+". Personal or school deadline; confirm with your teacher."),"END:VEVENT"];}),"END:VCALENDAR",""].join("\r\n");}
-export function Planner({state,update}:{state:WorkspaceState;update:Update}){
-const[open,setOpen]=useState(false),[title,setTitle]=useState(""),[due,setDue]=useState(localDate()),[subject,setSubject]=useState(state.profile.subjects[0]||"General"),[kind,setKind]=useState<Task["kind"]>("Study"),[showDone,setShowDone]=useState(false),[error,setError]=useState("");
-const[remaining,setRemaining]=useState(25*60),[running,setRunning]=useState(false),[complete,setComplete]=useState(false);const deadline=useRef(0),recorded=useRef(false);
-useEffect(()=>{if(!running)return;const tick=()=>{const next=Math.max(0,Math.ceil((deadline.current-Date.now())/1000));setRemaining(next);if(!next){setRunning(false);setComplete(true);if(!recorded.current){recorded.current=true;update(s=>({...s,focusSessions:[...s.focusSessions,{date:new Date().toISOString(),minutes:25}].slice(-2000)}));}}};tick();const t=setInterval(tick,500);return()=>clearInterval(t);},[running,update]);
-function add(e:React.FormEvent){e.preventDefault();const parsed=taskSchema.safeParse({id:uid(),title:title.trim(),subject,due,kind,done:false});if(!parsed.success){setError("Add a title and a valid due date.");return;}if(state.tasks.length>=1000){setError("Remove a few completed tasks before adding more.");return;}update(s=>({...s,tasks:[...s.tasks,parsed.data]}));setTitle("");setOpen(false);setError("");}
-const tasks=state.tasks.filter(t=>showDone||!t.done).sort((a,b)=>Number(a.done)-Number(b.done)||a.due.localeCompare(b.due));const subjects=Array.from(new Set([...state.profile.subjects,"General",subject]));
-return <><div className="page-heading"><div><span className="eyebrow">LESS LAST-MINUTE. MORE HEADSPACE.</span><h1>A little structure goes a long way.</h1><p>Turn deadlines into manageable steps, and give each one a little focus.</p></div><Button onClick={()=>setOpen(true)}><Plus size={17}/>Add a task</Button></div><div className="planner-grid"><section className="panel task-panel"><div className="section-heading"><h2>Your next steps</h2><Button variant="outline" size="sm" disabled={!state.tasks.some(t=>!t.done)} onClick={()=>downloadText(calendarText(state.tasks.filter(t=>!t.done)),"ibgenie-planner.ics","text/calendar")}><Download size={15}/>Calendar</Button></div><label className="inline-check"><Checkbox checked={showDone} onCheckedChange={v=>setShowDone(!!v)}/>Show completed tasks</label>{tasks.length?<div className="task-list">{tasks.map(t=><div className={"planner-task "+(t.done?"done":"")} key={t.id}><Checkbox id={"task-"+t.id} checked={t.done} onCheckedChange={v=>update(s=>({...s,tasks:s.tasks.map(x=>x.id===t.id?{...x,done:!!v}:x)}))}/><label htmlFor={"task-"+t.id}><strong>{t.title}</strong><small>{t.subject} · {t.kind}</small></label><time className={!t.done&&t.due<localDate()?"overdue":""} dateTime={t.due}>{t.due}</time><button className="icon-button" aria-label={"Delete "+t.title} onClick={()=>update(s=>({...s,tasks:s.tasks.filter(x=>x.id!==t.id)}))}><Trash2 size={17}/></button></div>)}</div>:<EmptyState title="Start with one small next step." action={<Button variant="outline" onClick={()=>setOpen(true)}><Plus size={16}/>Add a task</Button>}>Add your own school deadlines, reading, revision or lesson preparation.</EmptyState>}<p className="muted-note">Dates are yours to set. Calendar export creates all-day events; your calendar app controls reminders.</p></section><section className="panel focus-timer"><span className="timer-icon"><CalendarDays size={25}/></span><span className="eyebrow">ONE THING AT A TIME</span><h2>{complete?"Time for a breather.":"Make a little space to focus."}</h2><div className="timer-digits" role="timer" aria-label="Focus time remaining">{Math.floor(remaining/60)}<span>:</span>{String(remaining%60).padStart(2,"0")}</div><p>{complete?"25 minutes completed and recorded. Take a short break.":"Choose one task. Close a distraction. Begin."}</p><div className="button-row"><Button disabled={complete} onClick={()=>{if(!running)deadline.current=Date.now()+remaining*1000;setRunning(!running);}}>{running?<Pause size={17}/>:<Play size={17}/>} {running?"Pause":"Start focus"}</Button><Button variant="outline" aria-label="Reset focus timer" onClick={()=>{setRunning(false);setRemaining(1500);setComplete(false);recorded.current=false;}}><RotateCcw size={17}/></Button></div><small>Keep this planner open. Only completed sessions are recorded.</small></section></div><Dialog open={open} onOpenChange={setOpen}><DialogContent><DialogHeader><DialogTitle>Make the next step manageable.</DialogTitle><DialogDescription>Add a task and the date you want to finish it.</DialogDescription></DialogHeader><form className="form-stack" onSubmit={add}><Field label="What needs to happen?"><Input value={title} onChange={e=>setTitle(e.target.value)} maxLength={200} placeholder="e.g. Read two sources for my essay" required autoFocus/></Field><div className="form-grid"><Field label="Subject"><Picker label="Task subject" value={subject} onChange={setSubject} options={subjects}/></Field><Field label="Task type"><Picker label="Task type" value={kind} onChange={v=>setKind(v as Task["kind"])} options={["Study","IA","EE","TOK","CAS","Lesson"]}/></Field></div><Field label="Due date"><Input type="date" value={due} onChange={e=>setDue(e.target.value)} required/></Field>{error&&<ErrorNote>{error}</ErrorNote>}<Button type="submit"><Check size={17}/>Save task</Button></form></DialogContent></Dialog></>;
+import { useEffect, useRef, useState } from "react";
+import {
+  CalendarDays,
+  Check,
+  Download,
+  Pause,
+  Play,
+  Plus,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  downloadText,
+  localDate,
+  taskSchema,
+  uid,
+  type Task,
+  type WorkspaceState,
+} from "@/lib/workspace";
+import { EmptyState, ErrorNote, Field, Picker, type Update } from "./shared";
+function calendarText(tasks: Task[]) {
+  const escape = (s: string) =>
+    s
+      .replace(/\\/g, "\\\\")
+      .replace(/\r?\n/g, "\\n")
+      .replace(/,/g, "\\,")
+      .replace(/;/g, "\\;");
+  const stamp = new Date()
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d{3}/, "");
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//IBGenie Pro//Study planner//EN",
+    "CALSCALE:GREGORIAN",
+    ...tasks.flatMap((t) => {
+      const end = new Date(t.due + "T12:00:00Z");
+      end.setUTCDate(end.getUTCDate() + 1);
+      return [
+        "BEGIN:VEVENT",
+        "UID:" + escape(t.id) + "@ibgenie",
+        "DTSTAMP:" + stamp,
+        "DTSTART;VALUE=DATE:" + t.due.replace(/-/g, ""),
+        "DTEND;VALUE=DATE:" + end.toISOString().slice(0, 10).replace(/-/g, ""),
+        "SUMMARY:" + escape(t.title),
+        "DESCRIPTION:" +
+          escape(
+            t.subject +
+              " · " +
+              t.kind +
+              ". Personal or school deadline; confirm with your teacher.",
+          ),
+        "END:VEVENT",
+      ];
+    }),
+    "END:VCALENDAR",
+    "",
+  ].join("\r\n");
+}
+export function Planner({
+  state,
+  update,
+}: {
+  state: WorkspaceState;
+  update: Update;
+}) {
+  const [open, setOpen] = useState(false),
+    [title, setTitle] = useState(""),
+    [due, setDue] = useState(localDate()),
+    [subject, setSubject] = useState(state.profile.subjects[0] || "General"),
+    [kind, setKind] = useState<Task["kind"]>("Study"),
+    [showDone, setShowDone] = useState(false),
+    [error, setError] = useState("");
+  const [remaining, setRemaining] = useState(25 * 60),
+    [running, setRunning] = useState(false),
+    [complete, setComplete] = useState(false);
+  const deadline = useRef(0),
+    recorded = useRef(false);
+  useEffect(() => {
+    if (!running) return;
+    const tick = () => {
+      const next = Math.max(
+        0,
+        Math.ceil((deadline.current - Date.now()) / 1000),
+      );
+      setRemaining(next);
+      if (!next) {
+        setRunning(false);
+        setComplete(true);
+        if (!recorded.current) {
+          recorded.current = true;
+          update((s) => ({
+            ...s,
+            focusSessions: [
+              ...s.focusSessions,
+              { date: new Date().toISOString(), minutes: 25 },
+            ].slice(-2000),
+          }));
+        }
+      }
+    };
+    tick();
+    const t = setInterval(tick, 500);
+    return () => clearInterval(t);
+  }, [running, update]);
+  function add(e: React.FormEvent) {
+    e.preventDefault();
+    const parsed = taskSchema.safeParse({
+      id: uid(),
+      title: title.trim(),
+      subject,
+      due,
+      kind,
+      done: false,
+    });
+    if (!parsed.success) {
+      setError("Add a title and a valid due date.");
+      return;
+    }
+    if (state.tasks.length >= 1000) {
+      setError("Remove a few completed tasks before adding more.");
+      return;
+    }
+    update((s) => ({ ...s, tasks: [...s.tasks, parsed.data] }));
+    setTitle("");
+    setOpen(false);
+    setError("");
+  }
+  const tasks = state.tasks
+    .filter((t) => showDone || !t.done)
+    .sort(
+      (a, b) => Number(a.done) - Number(b.done) || a.due.localeCompare(b.due),
+    );
+  const subjects = Array.from(
+    new Set([...state.profile.subjects, "General", subject]),
+  );
+  return (
+    <>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">LESS LAST-MINUTE. MORE HEADSPACE.</span>
+          <h1>A little structure goes a long way.</h1>
+          <p>
+            Turn deadlines into manageable steps, and give each one a little
+            focus.
+          </p>
+        </div>
+        <Button onClick={() => setOpen(true)}>
+          <Plus size={17} />
+          Add a task
+        </Button>
+      </div>
+      <div className="planner-grid">
+        <section className="panel task-panel">
+          <div className="section-heading">
+            <h2>Your next steps</h2>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!state.tasks.some((t) => !t.done)}
+              onClick={() =>
+                downloadText(
+                  calendarText(state.tasks.filter((t) => !t.done)),
+                  "ibgenie-planner.ics",
+                  "text/calendar",
+                )
+              }
+            >
+              <Download size={15} />
+              Calendar
+            </Button>
+          </div>
+          <label className="inline-check">
+            <Checkbox
+              checked={showDone}
+              onCheckedChange={(v) => setShowDone(!!v)}
+            />
+            Show completed tasks
+          </label>
+          {tasks.length ? (
+            <div className="task-list">
+              {tasks.map((t) => (
+                <div
+                  className={"planner-task " + (t.done ? "done" : "")}
+                  key={t.id}
+                >
+                  <Checkbox
+                    id={"task-" + t.id}
+                    checked={t.done}
+                    onCheckedChange={(v) =>
+                      update((s) => ({
+                        ...s,
+                        tasks: s.tasks.map((x) =>
+                          x.id === t.id ? { ...x, done: !!v } : x,
+                        ),
+                      }))
+                    }
+                  />
+                  <label htmlFor={"task-" + t.id}>
+                    <strong>{t.title}</strong>
+                    <small>
+                      {t.subject} · {t.kind}
+                    </small>
+                  </label>
+                  <time
+                    className={!t.done && t.due < localDate() ? "overdue" : ""}
+                    dateTime={t.due}
+                  >
+                    {t.due}
+                  </time>
+                  <button
+                    className="icon-button"
+                    aria-label={"Delete " + t.title}
+                    onClick={() =>
+                      update((s) => ({
+                        ...s,
+                        tasks: s.tasks.filter((x) => x.id !== t.id),
+                      }))
+                    }
+                  >
+                    <Trash2 size={17} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="Start with one small next step."
+              action={
+                <Button variant="outline" onClick={() => setOpen(true)}>
+                  <Plus size={16} />
+                  Add a task
+                </Button>
+              }
+            >
+              Add your own school deadlines, reading, revision or lesson
+              preparation.
+            </EmptyState>
+          )}
+          <p className="muted-note">
+            Dates are yours to set. Calendar export creates all-day events; your
+            calendar app controls reminders.
+          </p>
+        </section>
+        <section className="panel focus-timer">
+          <span className="timer-icon">
+            <CalendarDays size={25} />
+          </span>
+          <span className="eyebrow">ONE THING AT A TIME</span>
+          <h2>
+            {complete
+              ? "Time for a breather."
+              : "Make a little space to focus."}
+          </h2>
+          <div
+            className="timer-digits"
+            role="timer"
+            aria-label="Focus time remaining"
+          >
+            {Math.floor(remaining / 60)}
+            <span>:</span>
+            {String(remaining % 60).padStart(2, "0")}
+          </div>
+          <p>
+            {complete
+              ? "25 minutes completed and recorded. Take a short break."
+              : "Choose one task. Close a distraction. Begin."}
+          </p>
+          <div className="button-row">
+            <Button
+              disabled={complete}
+              onClick={() => {
+                if (!running) deadline.current = Date.now() + remaining * 1000;
+                setRunning(!running);
+              }}
+            >
+              {running ? <Pause size={17} /> : <Play size={17} />}{" "}
+              {running ? "Pause" : "Start focus"}
+            </Button>
+            <Button
+              variant="outline"
+              aria-label="Reset focus timer"
+              onClick={() => {
+                setRunning(false);
+                setRemaining(1500);
+                setComplete(false);
+                recorded.current = false;
+              }}
+            >
+              <RotateCcw size={17} />
+            </Button>
+          </div>
+          <small>
+            Keep this planner open. Only completed sessions are recorded.
+          </small>
+        </section>
+      </div>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Make the next step manageable.</DialogTitle>
+            <DialogDescription>
+              Add a task and the date you want to finish it.
+            </DialogDescription>
+          </DialogHeader>
+          <form className="form-stack" onSubmit={add}>
+            <Field label="What needs to happen?">
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                maxLength={200}
+                placeholder="e.g. Read two sources for my essay"
+                required
+                autoFocus
+              />
+            </Field>
+            <div className="form-grid">
+              <Field label="Subject">
+                <Picker
+                  label="Task subject"
+                  value={subject}
+                  onChange={setSubject}
+                  options={subjects}
+                />
+              </Field>
+              <Field label="Task type">
+                <Picker
+                  label="Task type"
+                  value={kind}
+                  onChange={(v) => setKind(v as Task["kind"])}
+                  options={["Study", "IA", "EE", "TOK", "CAS", "Lesson"]}
+                />
+              </Field>
+            </div>
+            <Field label="Due date">
+              <Input
+                type="date"
+                value={due}
+                onChange={(e) => setDue(e.target.value)}
+                required
+              />
+            </Field>
+            {error && <ErrorNote>{error}</ErrorNote>}
+            <Button type="submit">
+              <Check size={17} />
+              Save task
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }
