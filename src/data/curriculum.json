@@ -1,0 +1,102 @@
+{
+  "checkedAt": "2026-09-08",
+  "reviewIntervalDays": 30,
+  "updates": [
+    {
+      "id": "ee-2027",
+      "title": "Extended essay",
+      "subjects": [
+        "Extended essay"
+      ],
+      "firstTeaching": 2025,
+      "firstAssessment": 2027,
+      "summary": "Choose a subject-focused or interdisciplinary research pathway. The revised assessment model totals 30 marks. Use the guide for your examination session with your supervisor.",
+      "url": "https://ibo.org/university-admission/latest-curriculum-updates/dp-extended-essay-updates/"
+    },
+    {
+      "id": "cs-2027",
+      "title": "Computer science",
+      "subjects": [
+        "Computer science"
+      ],
+      "firstTeaching": 2025,
+      "firstAssessment": 2027,
+      "summary": "Two themes connect computing concepts with computational thinking and problem-solving. The new course includes machine learning and a computational solution. Consult the guide for assessment weights.",
+      "url": "https://ibo.org/university-admission/latest-curriculum-updates/computer-science-updates/"
+    },
+    {
+      "id": "psych-2027",
+      "title": "Psychology",
+      "subjects": [
+        "Psychology"
+      ],
+      "firstTeaching": 2025,
+      "firstAssessment": 2027,
+      "summary": "Concepts, content and contexts are connected through the course. The internal assessment becomes a research proposal at both SL and HL.",
+      "url": "https://ibo.org/university-admission/latest-curriculum-updates/psychology-updates/"
+    },
+    {
+      "id": "arts-design-2027",
+      "title": "Visual arts and design technology",
+      "subjects": [
+        "Visual arts",
+        "Design technology"
+      ],
+      "firstTeaching": 2025,
+      "firstAssessment": 2027,
+      "summary": "Revised courses are first assessed in May 2027. Follow the relevant course link in the official directory to select your subject brief.",
+      "url": "https://ibo.org/university-admission/latest-curriculum-updates/"
+    },
+    {
+      "id": "history-2028",
+      "title": "History",
+      "subjects": [
+        "History"
+      ],
+      "firstTeaching": 2026,
+      "firstAssessment": 2028,
+      "summary": "Paired case studies, global themes and regional in-depth topics reshape the course. Assessment changes begin with May 2028, not the 2027 cohort.",
+      "url": "https://ibo.org/university-admission/latest-curriculum-updates/history-updates/"
+    },
+    {
+      "id": "math-2029",
+      "title": "Mathematics: AA and AI",
+      "subjects": [
+        "Mathematics: AA",
+        "Mathematics: AI"
+      ],
+      "firstTeaching": 2027,
+      "firstAssessment": 2029,
+      "summary": "The next mathematics courses begin teaching in 2027, with first assessment in May 2029. Earlier cohorts should continue with their existing course guides.",
+      "url": "https://ibo.org/university-admission/latest-curriculum-updates/"
+    },
+    {
+      "id": "languages-2029",
+      "title": "Language acquisition and dance",
+      "subjects": [
+        "Language B",
+        "Spanish B",
+        "French B",
+        "Language ab initio",
+        "Dance"
+      ],
+      "firstTeaching": 2027,
+      "firstAssessment": 2029,
+      "summary": "These updates are scheduled for first teaching in 2027 and assessment in May 2029. The directory also lists religion and society.",
+      "url": "https://ibo.org/university-admission/latest-curriculum-updates/"
+    },
+    {
+      "id": "subjects-2026",
+      "title": "ESS, global politics and SEHS",
+      "subjects": [
+        "Environmental systems and societies",
+        "Global politics",
+        "Sports, exercise and health science"
+      ],
+      "firstTeaching": 2024,
+      "firstAssessment": 2026,
+      "summary": "Updated courses in these subjects are first assessed in May 2026. Select the current subject brief through the official directory.",
+      "url": "https://ibo.org/university-admission/latest-curriculum-updates/"
+    }
+  ]
+}
