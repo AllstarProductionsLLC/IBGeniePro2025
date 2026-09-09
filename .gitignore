@@ -44,3 +44,7 @@ next-env.d.ts
 # firebase
 firebase-debug.log
 firestore-debug.log
+# Generated from the pinned pdfjs-dist package at install/build time
+/public/workers/
+
+/.test-artifacts/

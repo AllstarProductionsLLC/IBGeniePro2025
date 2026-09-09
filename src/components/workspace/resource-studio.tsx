@@ -29,6 +29,8 @@ import {
 } from "@/lib/workspace";
 import { AccessGate, useAIStatus } from "./access-gate";
 import { ErrorNote, Field, KindIcon, Markdown, Picker } from "./shared";
+import { toolsForRole, programYears, type Presentation, type Sequence } from "@/lib/learning-tools";
+import { PresentationEditor, SequenceEditor, blankSlide, blankUnit } from "./presentation-editor";
 const outlines: Record<string, string> = {
   "study-guide":
     "## Big idea\n\n## Key concepts\n\n## Worked example\n\n## Retrieval questions\n",
@@ -83,6 +85,9 @@ export function ResourceStudio({
     [generated, setGenerated] = useState(editing?.origin === "ai"),
     [difficulty, setDifficulty] = useState("Mixed"),
     [count, setCount] = useState("8");
+  const [years,setYears] = useState(String(editing?.sequence?.years || programYears[context.program]));
+  const [presentation,setPresentation] = useState<Presentation>(editing?.presentation || {slides:[{...blankSlide(),layout:"title"}]});
+  const [sequence,setSequence] = useState<Sequence>(editing?.sequence || {years:programYears[context.program],units:Array.from({length:programYears[context.program]},(_,i)=>blankUnit(i+1))});
   const api = useAIStatus(),
     abort = useRef<AbortController>(),
     fileRef = useRef<HTMLInputElement>(null);
@@ -117,6 +122,7 @@ export function ResourceStudio({
           source,
           difficulty,
           count: Number(count),
+          years: Number(years),
         }),
       });
       const d = await r.json();
@@ -135,6 +141,8 @@ export function ResourceStudio({
           .join("\n"),
       );
       setQuestions(d.questions);
+      if (d.presentation) setPresentation(d.presentation);
+      if (d.sequence) setSequence(d.sequence);
       setGenerated(true);
       setMode("write");
     } catch (e) {
@@ -167,6 +175,8 @@ export function ResourceStudio({
         body: ["flashcards", "quiz"].includes(kind) ? "" : body,
         cards,
         questions: kind === "quiz" ? questions : [],
+        presentation: kind === "presentation" ? {slides:presentation.slides.map(s=>({...s,bullets:s.bullets.filter(b=>b.trim())}))} : undefined,
+        sequence: kind === "scope-sequence" ? sequence : undefined,
         sourceNotes: source,
         program: context.program,
         level: context.program === "dp" ? level : "All",
@@ -179,7 +189,7 @@ export function ResourceStudio({
     } catch (e) {
       setError(
         e instanceof Error && "issues" in e
-          ? "Add a title and complete each item, including correct answers and explanations."
+          ? "Check the title and each item. Slides need short titles and up to 5 points. Each sequence year needs a unit, goals and valid teaching weeks."
           : e instanceof Error
             ? e.message
             : "Check the resource.",
@@ -209,8 +219,7 @@ export function ResourceStudio({
           <div className="eyebrow">THE RESOURCE STUDIO</div>
           <h1>{editing ? "Make it your own." : "A good idea starts here."}</h1>
           <p>
-            Turn a topic into something you can teach with, learn from, and
-            keep.
+{profile.role === "teacher" ? "Plan your teaching, build a classroom deck and export resources you can use." : "Turn your own notes into cards, quizzes and clear study guides."}
           </p>
         </div>
         <span className="soft-badge">
@@ -222,7 +231,7 @@ export function ResourceStudio({
         <aside className="panel studio-options">
           <h2>What would you like to create?</h2>
           <div className="kind-picker" role="group" aria-label="Resource type">
-            {resourceKinds.map((k) => (
+            {toolsForRole(profile.role).map((k) => (
               <button
                 key={k}
                 aria-pressed={kind === k}
@@ -258,6 +267,7 @@ export function ResourceStudio({
               />
             </Field>
           )}
+          {kind === "scope-sequence" && <Field label="Programme years" hint="MYP defaults to five years, DP to two. Choose the years taught at your school."><Picker label="Programme years" value={years} disabled={busy} options={Array.from({length:programYears[context.program]},(_,i)=>String(i+1))} onChange={v=>{setYears(v);const n=Number(v);setSequence(old=>({years:n,units:[...old.units.filter(u=>u.year<=n),...Array.from({length:Math.max(0,n-old.years)},(_,i)=>blankUnit(old.years+i+1))]}));}}/></Field>}
           <div className="studio-context">
             <strong>
               {context.program.toUpperCase()} · {context.examYear}
@@ -326,13 +336,13 @@ export function ResourceStudio({
                     options={["Support", "Mixed", "Extension"]}
                   />
                 </Field>
-                {["flashcards", "quiz"].includes(kind) && (
-                  <Field label="Practice items">
+                {["flashcards", "quiz", "presentation"].includes(kind) && (
+                  <Field label={kind === "presentation" ? "Slides" : "Practice items"}>
                     <Picker
                       value={count}
                       label="Practice items"
                       onChange={setCount}
-                      options={["5", "8", "12", "20"]}
+                      options={kind === "presentation" ? ["5","8","12","16"] : ["5", "8", "12", "20"]}
                     />
                   </Field>
                 )}
@@ -488,7 +498,9 @@ export function ResourceStudio({
                   </Button>
                 </div>
               )}
-              {!["flashcards", "quiz"].includes(kind) && (
+              {kind === "presentation" && <PresentationEditor value={presentation} onChange={setPresentation}/>}
+              {kind === "scope-sequence" && <SequenceEditor value={sequence} onChange={setSequence}/>}
+              {!["flashcards", "quiz", "presentation"].includes(kind) && (
                 <Tabs defaultValue="editor">
                   <TabsList>
                     <TabsTrigger value="editor">Write</TabsTrigger>

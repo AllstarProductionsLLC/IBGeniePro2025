@@ -431,7 +431,7 @@ export function CoachRoom({
             <Picker
               label="Coaching mode"
               value={mode}
-              options={modes}
+              options={modes.filter(m=>profile.role === "teacher" || m !== "Plan a lesson")}
               onChange={setMode}
               disabled={locked}
             />

@@ -193,5 +193,7 @@ export function createWorkspace(): WorkspaceState {
     core: {},
     focusSessions: [],
     activity: [],
+    learners: [],
+    assessments: [],
   };
 }

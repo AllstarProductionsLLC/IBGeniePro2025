@@ -3,6 +3,7 @@ import "./globals.css";
 import { MembershipProvider } from "@/hooks/use-membership";
 import { Toaster } from "@/components/ui/toaster";
 export const metadata: Metadata = {
+  metadataBase: new URL("https://IBgenie.com"),
   title: "IBGenie Pro | Your IB learning workspace",
   description:
     "Create useful resources, build understanding with quizzes and flashcards, plan your study, and explore ideas with AI subject coaches.",

@@ -50,7 +50,8 @@ function calendarText(tasks: Task[]) {
       end.setUTCDate(end.getUTCDate() + 1);
       return [
         "BEGIN:VEVENT",
-        "UID:" + escape(t.id) + "@ibgenie",
+        "UID:" + escape(t.id) + "@ibgenie.com",
+        "URL:https://IBgenie.com",
         "DTSTAMP:" + stamp,
         "DTSTART;VALUE=DATE:" + t.due.replace(/-/g, ""),
         "DTEND;VALUE=DATE:" + end.toISOString().slice(0, 10).replace(/-/g, ""),
@@ -80,7 +81,7 @@ export function Planner({
     [title, setTitle] = useState(""),
     [due, setDue] = useState(localDate()),
     [subject, setSubject] = useState(state.profile.subjects[0] || "General"),
-    [kind, setKind] = useState<Task["kind"]>("Study"),
+    [kind, setKind] = useState<Task["kind"]>(state.profile.role === "teacher" ? "Lesson" : "Study"),
     [showDone, setShowDone] = useState(false),
     [error, setError] = useState("");
   const [remaining, setRemaining] = useState(25 * 60),
@@ -340,7 +341,7 @@ export function Planner({
                   label="Task type"
                   value={kind}
                   onChange={(v) => setKind(v as Task["kind"])}
-                  options={["Study", "IA", "EE", "TOK", "CAS", "Lesson"]}
+                  options={state.profile.program === "dp" ? (state.profile.role === "teacher" ? ["Lesson","Study","IA","EE","TOK","CAS"] : ["Study","IA","EE","TOK","CAS"]) : state.profile.role === "teacher" ? ["Lesson","Study"] : ["Study"]}
                 />
               </Field>
             </div>

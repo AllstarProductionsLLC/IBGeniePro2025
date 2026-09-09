@@ -12,6 +12,8 @@ import { reserveUsage } from "./quota";
 import { publicAccessConfig } from "./config";
 import { POST as resources } from "@/app/api/resources/route";
 import { POST as rubric } from "@/app/api/rubric/route";
+import { POST as feedback } from "@/app/api/feedback/route";
+import { POST as grammar } from "@/app/api/grammar/route";
 import { POST as voice } from "@/app/api/realtime/route";
 import { serverEnv, session } from "@/test/server-env";
 jest.mock("./membership", () => ({ requireMember: jest.fn() }));
@@ -48,7 +50,7 @@ it("requires a verified member before AI", async () => {
   await expect(requireAI(req())).rejects.toMatchObject({ status: 401 });
   expect(reserveUsage).not.toHaveBeenCalled();
 });
-it.each([resources, rubric, voice])(
+it.each([resources, rubric, voice, feedback, grammar])(
   "blocks free members at the premium API even with a forged Pro body",
   async (handler) => {
     jest.mocked(requireMember).mockResolvedValue(session());

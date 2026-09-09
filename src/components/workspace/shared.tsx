@@ -9,6 +9,8 @@ import {
   FileText,
   Layers,
   Sparkles,
+  Presentation,
+  Route,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -28,6 +30,8 @@ export const icons = {
   "lesson-plan": Sparkles,
   rubric: ClipboardCheck,
   "exit-ticket": FileText,
+  presentation: Presentation,
+  "scope-sequence": Route,
 };
 export function KindIcon({
   kind,

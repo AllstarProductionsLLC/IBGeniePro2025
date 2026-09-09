@@ -24,6 +24,7 @@ import {
 } from "@/lib/workspace";
 import { curriculum } from "@/lib/curriculum";
 import { KindIcon, type Update } from "./shared";
+import { TeacherDashboard } from "./teacher-dashboard";
 import type { View } from "./workspace";
 type Props = {
   state: WorkspaceState;
@@ -35,6 +36,8 @@ type Props = {
 };
 export function Dashboard({ state, update, go, create, study, coach }: Props) {
   const teacher = state.profile.role === "teacher";
+  if (teacher) return <TeacherDashboard state={state} go={go} create={create}/>;
+  const program = state.profile.program;
   const due = state.resources
     .filter(
       (r) => r.kind === "flashcards" && r.program === state.profile.program,
@@ -71,7 +74,7 @@ export function Dashboard({ state, update, go, create, study, coach }: Props) {
     .reduce((n, s) => n + s.minutes, 0);
   const kinds: ResourceKind[] = teacher
     ? ["lesson-plan", "quiz", "rubric", "exit-ticket"]
-    : ["flashcards", "quiz", "study-guide", "lesson-plan"];
+    : ["flashcards", "quiz", "study-guide"];
   const name = state.profile.name
     ? ", " + state.profile.name.split(" ")[0]
     : "";
@@ -80,13 +83,12 @@ export function Dashboard({ state, update, go, create, study, coach }: Props) {
       <div className="page-heading">
         <div>
           <div className="eyebrow">
-            {state.profile.program.toUpperCase()} · {state.profile.examSession}{" "}
-            {state.profile.examYear}
+            {program.toUpperCase()} · {state.profile.yearGroup}{program === "dp" ? " · "+state.profile.examSession+" "+state.profile.examYear : ""}
           </div>
           <h1>
             {teacher
               ? "A little inspiration" + name + "."
-              : "Your next breakthrough" + name + "."}
+              : program === "pyp" ? "What will you discover"+name+"?" : program === "myp" ? "Make a new connection"+name+"." : "Your next breakthrough" + name + "."}
           </h1>
           <p>
             {teacher
@@ -119,9 +121,9 @@ export function Dashboard({ state, update, go, create, study, coach }: Props) {
               </>
             ) : (
               <>
-                Big ambitions.
+                {program === "pyp" ? "Play with an idea." : program === "myp" ? "Make the connections." : "Build your understanding."}
                 <br />
-                <span>Small, steady steps.</span>
+                <span>{program === "pyp" ? "See where it takes you." : program === "myp" ? "Try it in a new way." : "One good session at a time."}</span>
               </>
             )}
           </h2>
@@ -139,14 +141,14 @@ export function Dashboard({ state, update, go, create, study, coach }: Props) {
               onClick={() =>
                 teacher
                   ? create("lesson-plan")
-                  : due[0]
+                  : program === "pyp" ? go("practice") : due[0]
                     ? study(due[0].resource)
                     : create("flashcards")
               }
             >
               {teacher
                 ? "Plan a lesson"
-                : due[0]
+                : program === "pyp" ? "Play and discover" : due[0]
                   ? "Start a quick review"
                   : "Create flashcards"}
               <ArrowRight size={17} />
@@ -217,6 +219,11 @@ export function Dashboard({ state, update, go, create, study, coach }: Props) {
           </div>
         </section>
       </div>
+      <div className="student-pathways">
+        <button onClick={()=>go("practice")}><span>01</span><strong>{program === "pyp" ? "Play and discover" : program === "myp" ? "Concept challenges" : "Recall and reasoning"}</strong><p>{program === "pyp" ? "Match words, make predictions, try again." : "Connect ideas, test yourself and apply what you know."}</p><ArrowRight size={18}/></button>
+        <button onClick={()=>go("assessment")}><span>02</span><strong>{program === "pyp" ? "Look at my learning" : "Check my work"}</strong><p>See strengths and next steps in your own assignment.</p><ArrowRight size={18}/></button>
+        <button onClick={()=>go("grammar")}><span>03</span><strong>My writing lab</strong><p>Learn why an edit helps, and keep your own voice.</p><ArrowRight size={18}/></button>
+      </div>
       <section className="quick-create">
         <div className="section-heading">
           <h2>
@@ -248,6 +255,8 @@ export function Dashboard({ state, update, go, create, study, coach }: Props) {
                     "lesson-plan": "Turn a topic into a great lesson",
                     rubric: "Make feedback actionable",
                     "exit-ticket": "Check what clicked today",
+                    presentation: "Teach from a complete editable slide deck",
+                    "scope-sequence": "Plan progression across programme years",
                   }[k]
                 }
               </span>
