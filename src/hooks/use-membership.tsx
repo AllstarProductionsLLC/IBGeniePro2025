@@ -74,6 +74,7 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
     nonce = useRef(""),
     lastRequest = useRef(0),
     pending = useRef(false),
+    waitingForWix = useRef(false),
     disconnected = useRef(false),
     timeout = useRef<ReturnType<typeof setTimeout>>(),
     mounted = useRef(true);
@@ -112,25 +113,35 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
     }
   }, []);
   const requestConnection = useCallback((login = false) => {
-    if (window.parent === window || (disconnected.current && !login)) return;
+    if (
+      window.parent === window ||
+      waitingForWix.current ||
+      (disconnected.current && !login)
+    )
+      return;
     if (login) disconnected.current = false;
     if (Date.now() - lastRequest.current < 2500 && !login) return;
     const origins = config.current?.allowedOrigins || [];
     if (!origins.length) return;
     lastRequest.current = Date.now();
+    waitingForWix.current = true;
     nonce.current = Array.from(
       crypto.getRandomValues(new Uint8Array(24)),
       (b) => b.toString(16).padStart(2, "0"),
     ).join("");
     setConnecting(true);
     if (timeout.current) clearTimeout(timeout.current);
-    timeout.current = setTimeout(() => {
-      setConnecting(false);
-      if (!config.current?.authenticated)
-        setError(
-          "The Wix connection did not respond. Open this app from the published IB Genie page and try again.",
-        );
-    }, 18000);
+    timeout.current = setTimeout(
+      () => {
+        waitingForWix.current = false;
+        setConnecting(false);
+        if (!config.current?.authenticated)
+          setError(
+            "The Wix connection did not respond. Open this app from the published IB Genie page and try again.",
+          );
+      },
+      login ? 120000 : 18000,
+    );
     for (const origin of origins)
       window.parent.postMessage(
         {
@@ -145,6 +156,9 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
     async (disconnect = true) => {
       if (disconnect) {
         disconnected.current = true;
+        waitingForWix.current = false;
+        if (timeout.current) clearTimeout(timeout.current);
+        setConnecting(false);
         nonce.current = "";
       }
       try {
@@ -218,12 +232,14 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
       }
       if (!data || data.nonce !== nonce.current || !nonce.current) return;
       if (data.type === "IBGENIE_AUTH_REQUIRED") {
+        waitingForWix.current = false;
         if (timeout.current) clearTimeout(timeout.current);
         setConnecting(false);
         if (config.current?.authenticated) void signOut(false);
         return;
       }
       if (data.type === "IBGENIE_AUTH_ERROR") {
+        waitingForWix.current = false;
         if (timeout.current) clearTimeout(timeout.current);
         setConnecting(false);
         setError(
@@ -259,6 +275,7 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
           );
       } finally {
         pending.current = false;
+        waitingForWix.current = false;
         if (timeout.current) clearTimeout(timeout.current);
         if (active) setConnecting(false);
       }
@@ -283,6 +300,7 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
     }, 60000);
     return () => {
       active = false;
+      waitingForWix.current = false;
       mounted.current = false;
       if (timeout.current) clearTimeout(timeout.current);
       clearInterval(timer);
