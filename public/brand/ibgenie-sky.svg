@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1200" viewBox="0 0 1000 1200">
+<defs>
+ <linearGradient id="sky" x2=".3" y2="1"><stop stop-color="#bedfed"/><stop offset=".5" stop-color="#e4edf7"/><stop offset="1" stop-color="#f0ebf8"/></linearGradient>
+ <linearGradient id="sea" x2="0" y2="1"><stop stop-color="#aecfdf"/><stop offset=".2" stop-color="#dbe5f2"/><stop offset="1" stop-color="#e9e8f6"/></linearGradient>
+ <radialGradient id="light"><stop stop-color="#fffaee" stop-opacity=".95"/><stop offset="1" stop-color="#f8e4e9" stop-opacity="0"/></radialGradient>
+ <radialGradient id="cloud"><stop stop-color="#fff6ef"/><stop offset=".68" stop-color="#f6e4e8"/><stop offset="1" stop-color="#f1dce5" stop-opacity="0"/></radialGradient>
+ <filter id="soft"><feGaussianBlur stdDeviation="18"/></filter><filter id="haze"><feGaussianBlur stdDeviation="40"/></filter>
+</defs>
+<path fill="url(#sky)" d="M0 0h1000v1200H0z"/><ellipse cx="660" cy="400" rx="520" ry="480" fill="url(#light)"/>
+<g fill="none" stroke-width="21" opacity=".26" filter="url(#soft)"><path d="M450 970C470 260 1000 130 1160 470" stroke="#f4bdc8"/><path d="M473 972C493 283 1000 154 1139 485" stroke="#f8d5b5"/><path d="M495 974C515 306 1000 178 1118 500" stroke="#f4e8bc"/><path d="M517 976C537 329 1000 202 1097 515" stroke="#c4e5d6"/><path d="M539 978C559 352 1000 226 1076 530" stroke="#bfdcf3"/><path d="M561 980C581 375 1000 250 1055 545" stroke="#d7c7ef"/></g>
+<g fill="url(#cloud)"><ellipse cx="100" cy="210" rx="370" ry="175"/><ellipse cx="340" cy="265" rx="230" ry="155"/><ellipse cx="260" cy="80" rx="250" ry="165"/><ellipse cx="-30" cy="355" rx="350" ry="200"/><ellipse cx="825" cy="110" rx="360" ry="140"/><ellipse cx="1010" cy="200" rx="210" ry="140"/></g>
+<path d="M0 890Q260 875 500 890T1000 890V1200H0Z" fill="url(#sea)"/><path d="M0 893Q260 881 500 895T1000 893" fill="none" stroke="#f8f9fa" stroke-width="12" opacity=".8" filter="url(#soft)"/><g fill="none" stroke="#f7f5fc" opacity=".6" filter="url(#soft)"><path d="M-100 972Q240 906 700 990T1100 960" stroke-width="18"/><path d="M-100 1100Q400 990 1100 1100" stroke-width="26"/></g><ellipse cx="560" cy="830" rx="730" ry="150" fill="#f8f3f8" opacity=".55" filter="url(#haze)"/>
+</svg>

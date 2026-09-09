@@ -1,0 +1,199 @@
+import {
+  defaultProfile,
+  type Resource,
+  type WorkspaceState,
+} from "./workspace";
+const base = {
+  program: "dp" as const,
+  level: "All" as const,
+  examYear: 2027,
+  createdAt: "2026-09-08T00:00:00.000Z",
+  origin: "starter" as const,
+  starred: false,
+  sourceNotes:
+    "Original illustrative practice. Check coverage against class materials.",
+  body: "",
+  cards: [],
+  questions: [],
+};
+export const starterResources: Resource[] = [
+  {
+    ...base,
+    id: "starter-biology",
+    title: "Small cards. Big cell energy.",
+    summary: "Retrieve the essentials of membranes, enzymes and respiration.",
+    kind: "flashcards",
+    subject: "Biology",
+    cards: [
+      {
+        id: "b1",
+        front: "How does facilitated diffusion differ from active transport?",
+        back: "Facilitated diffusion moves substances down a concentration gradient through membrane proteins without direct ATP use. Active transport moves substances against a gradient using an energy source.",
+      },
+      {
+        id: "b2",
+        front: "What does an enzyme change in a reaction?",
+        back: "It lowers activation energy. It does not change the overall free-energy change or equilibrium position.",
+      },
+      {
+        id: "b3",
+        front:
+          "Where does glycolysis happen, and what is its net ATP yield per glucose?",
+        back: "In the cytosol. The net yield is two ATP per glucose, along with two pyruvate and two reduced NAD molecules.",
+      },
+      {
+        id: "b4",
+        front: "Why can high temperatures reduce enzyme activity?",
+        back: "Heat can disrupt the interactions maintaining the enzyme’s shape. The active site may change so the substrate binds less effectively.",
+      },
+      {
+        id: "b5",
+        front: "What is osmosis?",
+        back: "Net movement of water through a selectively permeable membrane from higher water potential to lower water potential.",
+      },
+      {
+        id: "b6",
+        front: "How does the sodium-potassium pump move ions per ATP?",
+        back: "It exports three sodium ions and imports two potassium ions, helping maintain gradients across the membrane.",
+      },
+    ],
+  },
+  {
+    ...base,
+    id: "starter-math",
+    title: "Find your calculus confidence",
+    summary:
+      "Six original questions, with explanations that show the reasoning.",
+    kind: "quiz",
+    subject: "Mathematics: AA",
+    questions: [
+      {
+        id: "m1",
+        question: "If f(x) = 3x² − 4x + 1, what is f′(2)?",
+        options: ["4", "8", "10", "12"],
+        correctAnswer: 1,
+        explanation:
+          "Differentiate to obtain f′(x) = 6x − 4. At x = 2, this is 12 − 4 = 8.",
+      },
+      {
+        id: "m2",
+        question: "What is the integral of 2x from 0 to 3?",
+        options: ["3", "6", "9", "18"],
+        correctAnswer: 2,
+        explanation:
+          "An antiderivative is x². Evaluating at the limits gives 3² − 0² = 9.",
+      },
+      {
+        id: "m3",
+        question: "Which x-value is a stationary point of f(x) = x² − 6x + 5?",
+        options: ["−3", "0", "3", "6"],
+        correctAnswer: 2,
+        explanation: "Set f′(x) = 0. Solving 2x − 6 = 0 gives x = 3.",
+      },
+      {
+        id: "m4",
+        question: "Differentiate e^(2x).",
+        options: ["e^(2x)", "2e^(2x)", "2xe^(2x)", "e^x"],
+        correctAnswer: 1,
+        explanation:
+          "The chain rule multiplies the exponential by the derivative of 2x, which is 2.",
+      },
+      {
+        id: "m5",
+        question:
+          "If f′(a) = 0 and f″(a) > 0, what does the second derivative test imply?",
+        options: [
+          "Local maximum",
+          "Local minimum",
+          "Vertical asymptote",
+          "No conclusion is possible",
+        ],
+        correctAnswer: 1,
+        explanation:
+          "The curve is concave upward at the stationary point, so it is a local minimum.",
+      },
+      {
+        id: "m6",
+        question:
+          "A particle has velocity v(t) = 6t − 2. What is its acceleration?",
+        options: ["6", "6t", "3t² − 2t", "−2"],
+        correctAnswer: 0,
+        explanation: "Acceleration is the derivative of velocity: a(t) = 6.",
+      },
+    ],
+  },
+  {
+    ...base,
+    id: "starter-econ",
+    title: "Elasticity, without the guesswork",
+    summary: "Connect calculations to decisions and evaluate the assumptions.",
+    kind: "study-guide",
+    subject: "Economics",
+    body: "## The central idea\nPrice elasticity of demand measures the responsiveness of quantity demanded to a change in price. Divide percentage change in quantity demanded by percentage change in price. State whether you report its magnitude.\n\n## Try it\nPrice rises by 10% and quantity demanded falls by 15%. PED is −1.5, or a magnitude of 1.5. Demand is price elastic over this change.\n\n## Explain the mechanism\nClose substitutes and more time to adjust often make demand more price elastic. Explain why consumers can switch, rather than only naming a determinant.\n\n## Evaluate\nElasticity varies along a demand curve and over time. A relationship estimated in one market need not transfer to another. Other conditions may also have changed.\n\n## Retrieval check\nWithout looking back, define PED, calculate it, and explain why a firm might care.\n\n## Command terms in practice\nExplain connects a cause to its consequence. Evaluate weighs evidence and limitations before reaching a supported judgement. These are study prompts, not quotations from the IB guide.",
+  },
+  {
+    ...base,
+    id: "starter-chemistry",
+    title: "Bonding: explain the properties",
+    summary: "Link structure and bonding to observable properties.",
+    kind: "flashcards",
+    subject: "Chemistry",
+    cards: [
+      {
+        id: "c1",
+        front: "Why does molten sodium chloride conduct electricity?",
+        back: "Ions can move and carry charge. In the solid, ions are held in fixed lattice positions.",
+      },
+      {
+        id: "c2",
+        front: "What is a covalent bond?",
+        back: "Electrostatic attraction between a shared pair of electrons and the nuclei of the bonded atoms.",
+      },
+      {
+        id: "c3",
+        front: "Why does graphite conduct electricity?",
+        back: "Each carbon bonds to three others. Delocalized electrons move along layers and carry charge.",
+      },
+      {
+        id: "c4",
+        front:
+          "Why does water boil at a higher temperature than hydrogen sulfide?",
+        back: "Water forms an extensive hydrogen-bond network. More energy is needed to overcome these intermolecular attractions.",
+      },
+    ],
+  },
+  {
+    ...base,
+    id: "starter-lesson",
+    title: "A lesson built around better questions",
+    summary: "A 50-minute inquiry sequence on the reliability of evidence.",
+    kind: "lesson-plan",
+    subject: "TOK",
+    body: "## Learning intention\nCompare evidence and justify how it supports a claim.\n\n## Success criteria\nDistinguish a claim from evidence, identify a limitation and revise a judgement.\n\n## 0–5 min · Retrieval\nWhat makes evidence convincing? Write individually, then compare with a partner.\n\n## 5–15 min · Model\nUse two teacher-selected public sources addressing the same claim. Think aloud about author, method, context and limitations.\n\n## 15–30 min · Investigate\nGroups build a claim–evidence–reasoning table with at least one counterargument.\n\n## 30–43 min · Discuss\nGroups exchange tables and challenge an assumption. Each group revises its conclusion.\n\n## 43–50 min · Exit ticket\nWhat changed your confidence in a claim? What further evidence would you seek?\n\n## Differentiate\nSupport: vocabulary and a partially completed table. Extend: compare evidence across two areas of knowledge.\n\n## Teacher preparation\nSelect accessible sources and check the current unit plan. This is an original classroom activity, not an official TOK assessment.",
+  },
+  {
+    ...base,
+    id: "starter-exit",
+    title: "The three-minute understanding check",
+    summary: "A short exit ticket you can adapt to your class.",
+    kind: "exit-ticket",
+    subject: "Biology",
+    body: "## Student copy\n1. Explain one difference between diffusion and active transport.\n2. Give an example of when a cell needs active transport.\n3. What is one question you still have?\n\n## Teacher response guide\nLook for direction relative to a gradient and energy requirements. Revisit facilitated diffusion if students confuse membrane proteins with energy use. Use unanswered questions to plan the next lesson.",
+  },
+];
+export function createWorkspace(): WorkspaceState {
+  return {
+    onboardingComplete: false,
+    version: 1,
+    profile: { ...defaultProfile, subjects: [...defaultProfile.subjects] },
+    resources: starterResources.map((r) => ({ ...r })),
+    tasks: [],
+    reviews: [],
+    attempts: [],
+    core: {},
+    focusSessions: [],
+    activity: [],
+    learners: [],
+    assessments: [],
+  };
+}

@@ -1,0 +1,91 @@
+// Copy into Wix Backend. The same policy is tested in this repository.
+import { createHmac, randomBytes } from "crypto";
+function timestamp(value) {
+  if (value === undefined || value === null) return null;
+  const time = new Date(value).getTime();
+  return Number.isFinite(time) ? Math.floor(time / 1000) : NaN;
+}
+// Velo Orders.Order uses lastPaymentStatus, not paymentStatus.
+export function paidPlans(
+  orders,
+  memberId,
+  now = Math.floor(Date.now() / 1000),
+) {
+  const plans = new Map();
+  for (const order of orders) {
+    if (order.buyer?.memberId !== memberId || typeof order.planId !== "string")
+      continue;
+    if (order.lastPaymentStatus !== "PAID" || !(Number(order.planPrice) > 0))
+      continue;
+    const start = timestamp(order.startDate),
+      end = timestamp(order.endDate),
+      cycleEnd = timestamp(order.currentCycle?.endedDate);
+    if (start === null || !Number.isFinite(start) || start > now) continue;
+    if (
+      [end, cycleEnd].some(
+        (value) => value !== null && (!Number.isFinite(value) || value <= now),
+      )
+    )
+      continue;
+    if (order.currentCycle?.index === 0) continue;
+    const trialDays = Number(order.freeTrialDays || 0);
+    if (!Number.isFinite(trialDays) || start + trialDays * 86400 > now)
+      continue;
+    const endingAfterPaidPeriod =
+      order.status === "CANCELED" &&
+      order.cancellation?.effectiveAt === "NEXT_PAYMENT_DATE" &&
+      ["MEMBER_ACTION", "OWNER_ACTION"].includes(order.cancellation?.cause) &&
+      end !== null &&
+      end > now;
+    if (order.status !== "ACTIVE" && !endingAfterPaidPeriod) continue;
+    if (order.pausePeriods?.some((period) => period.status === "ACTIVE"))
+      continue;
+    const dates = [end, cycleEnd].filter((value) => value !== null),
+      until = dates.length ? Math.min(...dates) : null,
+      previous = plans.get(order.planId);
+    if (
+      previous === undefined ||
+      (previous !== null && (until === null || until > previous))
+    )
+      plans.set(order.planId, until);
+  }
+  if (plans.size > 100)
+    throw new Error("Too many active plans. Contact site support.");
+  return Array.from(plans, ([id, until]) => ({ id, until }));
+}
+export function makeAssertion({
+  memberId,
+  plans,
+  nonce,
+  secret,
+  appOrigin,
+  issuer,
+}) {
+  if (!/^[a-f0-9]{48}$/.test(nonce) || secret.length < 32)
+    throw new Error("Invalid bridge configuration.");
+  const url = new URL(appOrigin);
+  if (url.protocol !== "https:" || url.origin !== appOrigin)
+    throw new Error("Use the exact HTTPS app origin.");
+  const now = Math.floor(Date.now() / 1000),
+    payload = {
+      purpose: "wix-member",
+      iss: issuer,
+      aud: appOrigin,
+      sub: memberId,
+      plans,
+      nonce,
+      iat: now,
+      exp: now + 90,
+      jti: randomBytes(24).toString("base64url"),
+    };
+  const header = Buffer.from(
+      JSON.stringify({ alg: "HS256", typ: "JWT" }),
+    ).toString("base64url"),
+    body = Buffer.from(JSON.stringify(payload)).toString("base64url"),
+    content = header + "." + body;
+  return (
+    content +
+    "." +
+    createHmac("sha256", secret).update(content).digest("base64url")
+  );
+}

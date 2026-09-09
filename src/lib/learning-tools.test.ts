@@ -1,0 +1,168 @@
+import {
+  assessmentRecordSchema,
+  canUseResource,
+  sequenceSchema,
+  presentationSchema,
+  feedbackMarkdown,
+} from "./learning-tools";
+import { createWorkspace, starterResources } from "./starter-resources";
+import { resourceSchema, workspaceSchema } from "./workspace";
+import { matchingCards, programmeStarters } from "./practice-games";
+import { lessonToPresentation } from "./lesson-presentation";
+const slide = {
+  id: "s1",
+  layout: "explain",
+  title: "A claim needs evidence",
+  bullets: ["Compare two sources."],
+  prompt: "What would change your mind?",
+  notes: "Discuss reliability.",
+};
+const unit = {
+  id: "u1",
+  year: 1,
+  title: "Inquiry",
+  weeks: 12,
+  goals: "Compare evidence",
+  inquiry: "How do we know?",
+  skills: "Evaluate sources",
+  assessment: "An explanation",
+  connections: "Build on observations",
+};
+it("restores old workspaces with the new optional tools without losing resources", () => {
+  const old = createWorkspace();
+  const { learners, assessments, ...backup } = old;
+  const restored = workspaceSchema.parse(backup);
+  expect(restored.learners).toEqual([]);
+  expect(restored.assessments).toEqual([]);
+  expect(restored.resources).toEqual(old.resources);
+});
+it("separates creation tools by role", () => {
+  expect(canUseResource("student", "lesson-plan")).toBe(false);
+  expect(canUseResource("student", "presentation")).toBe(false);
+  expect(canUseResource("student", "scope-sequence")).toBe(false);
+  expect(canUseResource("student", "quiz")).toBe(true);
+  expect(canUseResource("teacher", "presentation")).toBe(true);
+});
+it("requires actual editable slide content and rejects oversized decks", () => {
+  expect(presentationSchema.safeParse({ slides: [] }).success).toBe(false);
+  expect(
+    presentationSchema.safeParse({ slides: [slide, { ...slide }] }).success,
+  ).toBe(false);
+  expect(
+    presentationSchema.safeParse({
+      slides: [{ ...slide, bullets: Array(6).fill("Too many") }],
+    }).success,
+  ).toBe(false);
+  expect(
+    resourceSchema.safeParse({
+      ...starterResources[0],
+      kind: "presentation",
+      presentation: { slides: [slide] },
+      cards: [],
+    }).success,
+  ).toBe(true);
+});
+it("rejects missing years, impossible teaching weeks, and DP sequences over two years", () => {
+  expect(sequenceSchema.safeParse({ years: 2, units: [unit] }).success).toBe(
+    false,
+  );
+  expect(
+    sequenceSchema.safeParse({
+      years: 1,
+      units: [
+        { ...unit, weeks: 40 },
+        { ...unit, id: "u2", weeks: 20 },
+      ],
+    }).success,
+  ).toBe(false);
+  expect(
+    resourceSchema.safeParse({
+      ...starterResources[0],
+      kind: "scope-sequence",
+      sequence: {
+        years: 3,
+        units: [
+          unit,
+          { ...unit, id: "u2", year: 2 },
+          { ...unit, id: "u3", year: 3 },
+        ],
+      },
+    }).success,
+  ).toBe(false);
+});
+it("creates lesson slides with speaker notes and preserves the original lesson", () => {
+  const lesson = starterResources.find((r) => r.kind === "lesson-plan")!;
+  const deck = lessonToPresentation(lesson);
+  expect(deck.id).not.toBe(lesson.id);
+  expect(deck.presentation!.slides.length).toBeGreaterThan(3);
+  expect(deck.sourceNotes).toBe(lesson.body);
+  expect(resourceSchema.safeParse(deck).success).toBe(true);
+  expect(
+    deck.presentation!.slides.some((s) => s.notes.includes("teacher-selected")),
+  ).toBe(true);
+});
+it("provides PYP and MYP original resources with unambiguous matching rounds", () => {
+  programmeStarters.forEach((r) =>
+    expect(resourceSchema.safeParse(r).success).toBe(true),
+  );
+  const cards = programmeStarters[0].cards;
+  const pairs = matchingCards(
+    [...cards, { ...cards[0], id: "duplicate" }],
+    "pyp",
+  );
+  expect(pairs).toHaveLength(4);
+  expect(new Set(pairs.map((c) => c.front)).size).toBe(4);
+});
+it("saves feedback evidence and review status without saving the raw submission", () => {
+  const record = assessmentRecordSchema.parse({
+    id: "r",
+    learnerId: "code",
+    learnerAlias: "Learner 01",
+    title: "Investigation",
+    subject: "Science",
+    program: "myp",
+    yearGroup: "Year 3",
+    examYear: 2027,
+    role: "teacher",
+    rubricSource: "School rubric",
+    criteria: [],
+    report: {
+      overview: "Evidence is developing.",
+      strengths: ["Explains a claim"],
+      nextSteps: ["Add a measurement"],
+      criteria: [],
+      comment: "Review the evidence.",
+    },
+    teacherComment: "Good progress.",
+    teacherGrade: "Developing",
+    reviewed: true,
+    createdAt: new Date().toISOString(),
+    work: "PRIVATE FULL SUBMISSION",
+  });
+  expect(record).not.toHaveProperty("work");
+  const md = feedbackMarkdown(record);
+  expect(md).toContain("Teacher-reviewed");
+  expect(md).toContain("Good progress.");
+  expect(md).toContain("https://IBgenie.com");
+  expect(md).not.toContain("PRIVATE FULL SUBMISSION");
+});
+
+it("keeps all content in notes when converting long plain-text or fragmented lessons", () => {
+  const base = starterResources.find((r) => r.kind === "lesson-plan")!;
+  for (const body of [
+    "A useful classroom example. ".repeat(1000) + "FINAL SENTENCE",
+    Array.from({ length: 40 }, (_, i) => `## Section ${i}\nEvidence ${i}`).join(
+      "\n\n",
+    ),
+  ]) {
+    const result = lessonToPresentation({ ...base, body });
+    expect(result.presentation!.slides.length).toBeLessThanOrEqual(24);
+    expect(
+      result
+        .presentation!.slides.slice(1)
+        .map((s) => s.notes)
+        .join(""),
+    ).toBe(body);
+    expect(resourceSchema.safeParse(result).success).toBe(true);
+  }
+});
