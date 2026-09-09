@@ -1,4 +1,5 @@
 "use client";
+import {apiFetch} from "@/lib/api-client";
 import { useEffect, useRef, useState } from "react";
 import {
   Check,
@@ -102,7 +103,7 @@ export function ResourceStudio({
     setError("");
     abort.current = new AbortController();
     try {
-      const r = await fetch("/api/resources", {
+      const r = await apiFetch("/api/resources", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: abort.current.signal,
@@ -279,7 +280,7 @@ export function ResourceStudio({
               </TabsTrigger>
             </TabsList>
             <TabsContent value="ai">
-              <AccessGate {...api} />
+              <AccessGate {...api} capability="resources" />
               <Field
                 label="Your topic, notes, or learning goals"
                 hint="Use material you have permission to use. Remove names and personal student information."
@@ -345,7 +346,7 @@ export function ResourceStudio({
                   busy ||
                   !source.trim() ||
                   !api.status?.text ||
-                  !api.status.authenticated
+                  !api.status.authenticated || api.status.tier !== "pro"
                 }
                 onClick={generate}
               >

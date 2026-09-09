@@ -18,6 +18,7 @@ export const kindLabels: Record<ResourceKind, string> = {
 };
 export const profileSchema = z.object({
   name: z.string().max(60),
+  yearGroup: z.string().min(1).max(30).default("Year 1"),
   role: z.enum(["student", "teacher"]),
   program: z.enum(["dp", "myp", "pyp"]),
   examYear: z.number().int().min(2026).max(2040),
@@ -28,6 +29,7 @@ export const profileSchema = z.object({
 export type Profile = z.infer<typeof profileSchema>;
 export const defaultProfile: Profile = {
   name: "",
+  yearGroup: "Year 1",
   role: "student",
   program: "dp",
   examYear: 2027,
@@ -162,6 +164,7 @@ const attemptSchema = z
 export const workspaceSchema = z
   .object({
     version: z.literal(1),
+    onboardingComplete: z.boolean().default(false),
     profile: profileSchema,
     resources: z.array(resourceSchema).max(500),
     tasks: z.array(taskSchema).max(1000),
@@ -304,4 +307,17 @@ export function parseCardNotes(notes: string): Card[] {
       back: line.slice(at + 2).trim(),
     };
   });
+}
+
+export function yearGroups(
+  program: Profile["program"],
+  role: Profile["role"],
+): string[] {
+  return [
+    ...Array.from(
+      { length: program === "dp" ? 2 : program === "myp" ? 5 : 6 },
+      (_, i) => "Year " + (i + 1),
+    ),
+    ...(role === "teacher" ? ["Multiple years"] : []),
+  ];
 }

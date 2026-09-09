@@ -1,9 +1,41 @@
 import "server-only";
-import {NextResponse} from "next/server";import {ZodError} from "zod";import {ApiError} from "./errors";import {appOrigin,accessConfigured} from "./config";import {requireMember} from "./membership";import {assertEntitlement,reserveUsage,type Capability} from "./quota";
-export {ApiError} from "./errors";export {accessConfigured} from "./config";export {rateLimit} from "./redis";
-export function sameOrigin(r:Request){if(!appOrigin()||r.headers.get("origin")!==appOrigin())throw new ApiError(403,"Open this action from your IB Genie workspace.");}
-export async function requireAI(r:Request,capability:Capability="chat"){sameOrigin(r);if(!accessConfigured())throw new ApiError(503,"Account services are not connected yet.");const session=await requireMember(r);assertEntitlement(session,capability);if(!(capability==="voice"?process.env.OPENAI_API_KEY&&process.env.QSTASH_TOKEN:process.env.GEMINI_API_KEY))throw new ApiError(503,"This AI service is not connected yet.");return reserveUsage(session,capability);}
-export async function refundUsage(lease:Awaited<ReturnType<typeof requireAI>>|undefined){if(lease)try{await lease.refund();}catch{console.warn("AI request refund could not be saved");}}
+import { NextResponse } from "next/server";
+import { ZodError } from "zod";
+import { ApiError } from "./errors";
+import { appOrigin, accessConfigured } from "./config";
+import { requireMember } from "./membership";
+import { assertEntitlement, reserveUsage, type Capability } from "./quota";
+export { ApiError } from "./errors";
+export { accessConfigured } from "./config";
+export { rateLimit } from "./redis";
+export function sameOrigin(r: Request) {
+  if (!appOrigin() || r.headers.get("origin") !== appOrigin())
+    throw new ApiError(403, "Open this action from your IB Genie workspace.");
+}
+export async function requireAI(r: Request, capability: Capability = "chat") {
+  sameOrigin(r);
+  if (!accessConfigured())
+    throw new ApiError(503, "Account services are not connected yet.");
+  const session = await requireMember(r);
+  assertEntitlement(session, capability);
+  if (
+    !(capability === "voice"
+      ? process.env.OPENAI_API_KEY && process.env.QSTASH_TOKEN
+      : process.env.GEMINI_API_KEY)
+  )
+    throw new ApiError(503, "This AI service is not connected yet.");
+  return reserveUsage(session, capability);
+}
+export async function refundUsage(
+  lease: Awaited<ReturnType<typeof requireAI>> | undefined,
+) {
+  if (lease)
+    try {
+      await lease.refund();
+    } catch {
+      console.warn("AI request refund could not be saved");
+    }
+}
 export async function readLimited(r: Request, maxBytes = 100000) {
   const length = Number(r.headers.get("content-length"));
   if (Number.isFinite(length) && length > maxBytes)

@@ -1,5 +1,6 @@
 
 "use client";
+import {apiFetch} from "@/lib/api-client";
 
 import { useEffect, useState, useRef, ChangeEvent, DragEvent } from "react";
 import ReactMarkdown from "react-markdown";
@@ -368,7 +369,7 @@ export default function ChatInterface({
         handleRenameChat(activeSession.id, title);
       }
 
-      const response = await fetch("/api/chat", {
+      const response = await apiFetch("/api/chat", {
         method: "POST",
         body: formData,
       });

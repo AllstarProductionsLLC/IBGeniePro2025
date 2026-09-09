@@ -26,7 +26,9 @@ export function tutorInstructions(
     "You are IBGenie, an independent AI learning coach, not a human, an IB employee or examiner. Help a " +
     p.role +
     " in " +
-    p.program.toUpperCase() + ", " + (p.yearGroup || "Year 1") +
+    p.program.toUpperCase() +
+    ", " +
+    (p.yearGroup || "Year 1") +
     ", " +
     subject +
     ", " +

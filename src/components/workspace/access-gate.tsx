@@ -1,123 +1,143 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
-import { KeyRound, LoaderCircle, PlugZap, ShieldCheck } from "lucide-react";
+import {
+  ArrowUpRight,
+  Crown,
+  ExternalLink,
+  LoaderCircle,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useMembership } from "@/hooks/use-membership";
 import { ErrorNote } from "./shared";
-type Status = {
-  configured: boolean;
-  authenticated: boolean;
-  text: boolean;
-  voice: boolean;
-};
-export function useAIStatus() {
-  const [status, setStatus] = useState<Status>();
-  const [statusError, setError] = useState("");
-  const refresh = useCallback(async () => {
-    try {
-      const r = await fetch("/api/access", { cache: "no-store" });
-      if (!r.ok) throw new Error();
-      setStatus(await r.json());
-      setError("");
-    } catch {
-      setError("Could not check the AI connection.");
-    }
-  }, []);
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
-  return { status, statusError, refresh };
-}
+export const useAIStatus = useMembership;
 export function AccessGate({
   status,
   statusError,
   refresh,
+  connect,
+  openStandalone,
+  connecting,
   capability = "text",
-}: ReturnType<typeof useAIStatus> & { capability?: "text" | "voice" }) {
-  const [code, setCode] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const unlock = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    setError("");
-    try {
-      const r = await fetch("/api/access", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
-      });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error);
-      setCode("");
-      await refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Please try again.");
-    } finally {
-      setBusy(false);
-    }
-  };
-  if (statusError)
-    return (
-      <ErrorNote>
-        {statusError}{" "}
-        <button className="text-button" onClick={refresh}>
-          Retry
-        </button>
-      </ErrorNote>
-    );
+}: ReturnType<typeof useAIStatus> & {
+  capability?: "text" | "voice" | "resources" | "rubric";
+}) {
   if (!status)
     return (
       <div className="info-note">
-        <LoaderCircle className="animate-spin" size={16} />
-        Checking AI connection…
+        <LoaderCircle size={16} className="animate-spin" />
+        Checking your membership…
       </div>
     );
-  if (!status[capability])
-    return (
-      <div className="connection-note">
-        <PlugZap size={23} />
-        <div>
-          <strong>
-            {capability === "voice" ? "Voice coaching" : "AI tools"} is not
-            connected yet.
-          </strong>
-          <p>
-            The workspace owner needs to enable this connection. You can create
-            resources, practice and plan your work now.
-          </p>
-        </div>
-      </div>
-    );
-  if (status.authenticated)
-    return (
-      <div className="access-ready">
-        <ShieldCheck size={16} />
-        AI connection enabled for this session
-      </div>
-    );
+  const premium = capability !== "text",
+    connected = capability === "voice" ? status.voice : status.text;
   return (
-    <div className="access-form">
-      <KeyRound size={22} />
-      <div>
-        <strong>Have a workspace access code?</strong>
-        <p>Use the code your teacher or workspace owner gave you.</p>
-        <form onSubmit={unlock}>
-          <Input
-            type="password"
-            autoComplete="current-password"
-            aria-label="AI access code"
-            value={code}
-            maxLength={256}
-            onChange={(e) => setCode(e.target.value)}
-            required
-          />
-          <Button type="submit" disabled={busy}>
-            {busy ? "Connecting…" : "Unlock AI tools"}
-          </Button>
-        </form>
-        {error && <ErrorNote>{error}</ErrorNote>}
+    <>
+      {statusError && (
+        <ErrorNote>
+          {statusError}{" "}
+          <button className="text-button" onClick={refresh}>
+            Retry
+          </button>
+        </ErrorNote>
+      )}
+      <div className="account-card">
+        <strong>
+          {status.tier === "pro" ? (
+            <Crown size={18} />
+          ) : (
+            <UserRound size={18} />
+          )}{" "}
+          {status.tier === "pro"
+            ? "IB Genie Pro"
+            : status.tier === "free"
+              ? "IB Genie Free"
+              : "Your IB Genie account"}
+        </strong>
+        {!status.configured ? (
+          <p>
+            Account access is being connected. Your resource library, manual
+            creation and study tools are available now.
+          </p>
+        ) : !status.authenticated ? (
+          <>
+            <p>
+              Sign in through IB Genie for {status.freeLimit} free AI messages
+              each day. Your Wix Pro subscription unlocks AI resources and live
+              voice.
+            </p>
+            <div className="button-row">
+              <Button onClick={connect} disabled={connecting}>
+                {connecting ? (
+                  <LoaderCircle size={16} className="animate-spin" />
+                ) : (
+                  <ShieldCheck size={16} />
+                )}{" "}
+                {connecting ? "Connecting…" : "Connect my Wix account"}
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="account-usage">
+              <span>
+                {status.usage?.aiRemaining ?? 0} / {status.usage?.aiLimit ?? 0}{" "}
+                AI requests left today
+              </span>
+              {status.tier === "pro" && (
+                <span>
+                  {status.usage?.voiceRemaining ?? 0} voice sessions left
+                </span>
+              )}
+            </div>
+            {premium && status.tier !== "pro" && (
+              <p>
+                {capability === "voice"
+                  ? "Live voice coaching"
+                  : "AI resource and feedback tools"}{" "}
+                is included with an active Pro plan. Your free messages work in
+                text coaching.
+              </p>
+            )}
+            {!connected && (
+              <p>
+                {capability === "voice" ? "Live voice" : "The text provider"} is
+                not connected yet. Please check back after the workspace owner
+                enables it.
+              </p>
+            )}
+            {status.tier !== "pro" && (
+              <div className="button-row">
+                <Button variant="outline" asChild>
+                  <a
+                    href={status.upgradeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Explore Pro plans <ArrowUpRight size={16} />
+                  </a>
+                </Button>
+              </div>
+            )}
+            {capability === "voice" && status.tier === "pro" && (
+              <div className="button-row">
+                <Button variant="outline" size="sm" onClick={openStandalone}>
+                  <ExternalLink size={15} />
+                  Open in a new tab
+                </Button>
+                <small>
+                  If Wix blocks the microphone. A new tab needs reconnection
+                  through Wix after five minutes.
+                </small>
+              </div>
+            )}
+            <p className="muted-note">
+              Daily allowances reset at midnight UTC. Membership is checked
+              again while you use the Wix page.
+            </p>
+          </>
+        )}
       </div>
-    </div>
+    </>
   );
 }

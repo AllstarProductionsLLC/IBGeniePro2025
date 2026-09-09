@@ -6,33 +6,33 @@ This branch adds the Wix connection and production access controls. Installing t
 
 Use the existing Next.js Vercel project with Node.js 22, `npm ci`, and `npm run build`. Enter variables in the project's **Environment Variables** settings for the intended environment, then redeploy. Select **Secret** for credentials. Vercel's current dashboard distinguishes readable Config values from write-only Secret values. Never use `NEXT_PUBLIC_` for a credential, put credentials in page code, or commit `.env.local`. [Vercel environment variable types](https://vercel.com/docs/environment-variables/sensitive-environment-variables)
 
-| Variable | Type | Value to enter |
-| --- | --- | --- |
-| `APP_ORIGIN` | Config | Exact HTTPS app origin, for example `https://app.ibgenie.com`, without a path or trailing slash. Use your actual deployed domain. |
-| `WIX_SITE_ORIGIN` | Config | `https://www.ibgenie.com` |
-| `WIX_ALLOWED_ORIGINS` | Config | `https://www.ibgenie.com,https://ibgenie.com` |
-| `WIX_UPGRADE_URL` | Config | `https://www.ibgenie.com/plans-pricing` |
-| `WIX_PRO_PLAN_IDS` | Config | Actual Wix Pricing Plans IDs for Ultimate Pro/Pro, separated by commas. Include each eligible monthly and annual plan. Names and role IDs do not work. |
-| `WIX_BRIDGE_SECRET` | Secret | A random secret of at least 32 characters. It must equal Wix's `IBGENIE_BRIDGE_SECRET`. |
-| `SESSION_SECRET` | Secret | A different random secret of at least 32 characters. Used only by the app server. |
-| `UPSTASH_REDIS_REST_URL` | Config | HTTPS REST endpoint from your Upstash Redis database. |
-| `UPSTASH_REDIS_REST_TOKEN` | Secret | Read/write REST token for that database. |
-| `GEMINI_API_KEY` | Secret | Google Gemini API key for text coaching and Pro generation. |
-| `GEMINI_MODEL` | Config | Defaults to `gemini-3.8-flash`. Choose a supported model your Google project can access. |
-| `OPENAI_API_KEY` | Secret | OpenAI project key, required for voice. |
-| `OPENAI_REALTIME_MODEL` | Config | Defaults to `gpt-realtime-2.1`. Your project must have access. |
-| `QSTASH_TOKEN` | Secret | Upstash QStash token, required with OpenAI to enable the server voice timer. |
+| Variable                   | Type   | Value to enter                                                                                                                                         |
+| -------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `APP_ORIGIN`               | Config | Exact HTTPS app origin, for example `https://app.ibgenie.com`, without a path or trailing slash. Use your actual deployed domain.                      |
+| `WIX_SITE_ORIGIN`          | Config | `https://www.ibgenie.com`                                                                                                                              |
+| `WIX_ALLOWED_ORIGINS`      | Config | `https://www.ibgenie.com,https://ibgenie.com`                                                                                                          |
+| `WIX_UPGRADE_URL`          | Config | `https://www.ibgenie.com/plans-pricing`                                                                                                                |
+| `WIX_PRO_PLAN_IDS`         | Config | Actual Wix Pricing Plans IDs for Ultimate Pro/Pro, separated by commas. Include each eligible monthly and annual plan. Names and role IDs do not work. |
+| `WIX_BRIDGE_SECRET`        | Secret | A random secret of at least 32 characters. It must equal Wix's `IBGENIE_BRIDGE_SECRET`.                                                                |
+| `SESSION_SECRET`           | Secret | A different random secret of at least 32 characters. Used only by the app server.                                                                      |
+| `UPSTASH_REDIS_REST_URL`   | Config | HTTPS REST endpoint from your Upstash Redis database.                                                                                                  |
+| `UPSTASH_REDIS_REST_TOKEN` | Secret | Read/write REST token for that database.                                                                                                               |
+| `GEMINI_API_KEY`           | Secret | Google Gemini API key for text coaching and Pro generation.                                                                                            |
+| `GEMINI_MODEL`             | Config | Defaults to `gemini-3.8-flash`. Choose a supported model your Google project can access.                                                               |
+| `OPENAI_API_KEY`           | Secret | OpenAI project key, required for voice.                                                                                                                |
+| `OPENAI_REALTIME_MODEL`    | Config | Defaults to `gpt-realtime-2.1`. Your project must have access.                                                                                         |
+| `QSTASH_TOKEN`             | Secret | Upstash QStash token, required with OpenAI to enable the server voice timer.                                                                           |
 
 Generate each signing secret separately on your own machine using `openssl rand -hex 32`. Paste the values directly into Vercel and Wix Secrets Manager. Do not send them in chat. Use separate secrets and Redis databases for staging and production.
 
-| Optional setting | Default | Meaning |
-| --- | --- | --- |
-| `FREE_DAILY_MESSAGE_LIMIT` | `10` | Text coaching requests per signed-in free member per UTC day. |
-| `PRO_DAILY_AI_LIMIT` | `200` | Combined text, resource generation and rubric feedback requests per Pro member per UTC day. |
-| `PRO_DAILY_VOICE_LIMIT` | `10` | Voice starts per Pro member per UTC day. |
-| `VOICE_SESSION_MINUTES` | `10` | Server-scheduled voice duration, between 1 and 30 minutes. |
-| `AI_WORKSPACE_DAILY_LIMIT` | `2000` | Combined AI request ceiling across all members. |
-| `VOICE_WORKSPACE_DAILY_LIMIT` | `100` | Voice-start ceiling across all members. |
+| Optional setting              | Default | Meaning                                                                                     |
+| ----------------------------- | ------- | ------------------------------------------------------------------------------------------- |
+| `FREE_DAILY_MESSAGE_LIMIT`    | `10`    | Text coaching requests per signed-in free member per UTC day.                               |
+| `PRO_DAILY_AI_LIMIT`          | `200`   | Combined text, resource generation and rubric feedback requests per Pro member per UTC day. |
+| `PRO_DAILY_VOICE_LIMIT`       | `10`    | Voice starts per Pro member per UTC day.                                                    |
+| `VOICE_SESSION_MINUTES`       | `10`    | Server-scheduled voice duration, between 1 and 30 minutes.                                  |
+| `AI_WORKSPACE_DAILY_LIMIT`    | `2000`  | Combined AI request ceiling across all members.                                             |
+| `VOICE_WORKSPACE_DAILY_LIMIT` | `100`   | Voice-start ceiling across all members.                                                     |
 
 Account services fail closed without the origins, approved plan IDs, two different signing secrets, and Redis credentials. Basic manual tools remain available. Voice stays disabled until both OpenAI and QStash are configured. These settings replace `AI_ACCESS_CODE`; a shared access code is no longer used.
 
@@ -41,10 +41,10 @@ Account services fail closed without the origins, approved plan IDs, two differe
 1. Enable Velo on the existing Wix site. Keep its current Members Area and Pricing Plans checkout. In Wix's package manager, install `@wix/site` for the current frontend authentication API. [Wix Site API installation](https://dev.wix.com/docs/sdk/host-modules/site/introduction)
 2. Add these two entries in Wix **Secrets Manager**:
 
-   | Wix secret | Value |
-   | --- | --- |
-   | `IBGENIE_BRIDGE_SECRET` | The same value as Vercel's `WIX_BRIDGE_SECRET`. |
-   | `IBGENIE_APP_ORIGIN` | The exact same HTTPS origin as Vercel's `APP_ORIGIN`. |
+   | Wix secret              | Value                                                 |
+   | ----------------------- | ----------------------------------------------------- |
+   | `IBGENIE_BRIDGE_SECRET` | The same value as Vercel's `WIX_BRIDGE_SECRET`.       |
+   | `IBGENIE_APP_ORIGIN`    | The exact same HTTPS origin as Vercel's `APP_ORIGIN`. |
 
 3. Copy [ibgenie-policy.js](../integrations/wix/backend/ibgenie-policy.js) into Wix's **Backend** folder as `ibgenie-policy.js`.
 4. Create a Backend **web module** named `ibgenie.web.js`, using [ibgenie.web.js](../integrations/wix/backend/ibgenie.web.js). Preserve `Permissions.SiteMember`. Only secret retrieval is elevated; the member and order lookups retain current-member permissions. Secret values stay in the backend. [Wix secret retrieval](https://dev.wix.com/docs/velo/apis/wix-secrets-backend-v2/secrets/get-secret-value)
@@ -58,11 +58,11 @@ If your canonical Wix domain changes, update the backend's `ISSUER`, `WIX_SITE_O
 
 ## Who gets access
 
-| User | Included |
-| --- | --- |
-| Guest | Onboarding, manual resources, starter resources, quizzes, flashcard review, planning, curriculum links and local backup/export. |
-| Signed-in free Wix member | Basic tools plus 10 AI text-coaching requests per day by default. |
-| Verified paying Pro member | Text coaching, AI resources, formative rubric feedback and realtime voice, within the configured allowances. |
+| User                       | Included                                                                                                                        |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Guest                      | Onboarding, manual resources, starter resources, quizzes, flashcard review, planning, curriculum links and local backup/export. |
+| Signed-in free Wix member  | Basic tools plus 10 AI text-coaching requests per day by default.                                                               |
+| Verified paying Pro member | Text coaching, AI resources, formative rubric feedback and realtime voice, within the configured allowances.                    |
 
 Student/teacher selection personalizes the interface. It cannot grant Pro access or Wix administration rights.
 

@@ -1,19 +1,28 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useMembership } from "./use-membership";
 import { createWorkspace } from "@/lib/starter-resources";
 import { workspaceSchema, type WorkspaceState } from "@/lib/workspace";
 const KEY = "ibgenie.workspace.v1";
 export function useWorkspace() {
-  const [state, setState] = useState<WorkspaceState>(createWorkspace);
-  const [ready, setReady] = useState(false);
+  const { status } = useMembership();
+  const key = status?.memberKey ? KEY + ":" + status.memberKey : KEY;
+  const [entry, setEntry] = useState<{ key: string; state: WorkspaceState }>(
+    () => ({ key: "", state: createWorkspace() }),
+  );
   const [storageError, setStorageError] = useState("");
-  const lastSaved = useRef("");
-  const writable = useRef(true);
+  const lastSaved = useRef(""),
+    writable = useRef(true);
   useEffect(() => {
+    if (!status) return;
+    writable.current = true;
+    lastSaved.current = "";
+    setStorageError("");
+    let state = createWorkspace();
     try {
-      const raw = localStorage.getItem(KEY);
+      const raw = localStorage.getItem(key);
       if (raw) {
-        setState(workspaceSchema.parse(JSON.parse(raw)));
+        state = workspaceSchema.parse(JSON.parse(raw));
         lastSaved.current = raw;
       }
     } catch {
@@ -22,14 +31,14 @@ export function useWorkspace() {
         "Your saved workspace could not be opened. The original copy has been kept. Export it from Settings before restoring a backup.",
       );
     }
-    setReady(true);
-  }, []);
+    setEntry({ key, state });
+  }, [key, !!status]);
   useEffect(() => {
-    if (!ready || !writable.current) return;
-    const raw = JSON.stringify(state);
+    if (entry.key !== key || !writable.current) return;
+    const raw = JSON.stringify(entry.state);
     if (raw === lastSaved.current) return;
     try {
-      localStorage.setItem(KEY, raw);
+      localStorage.setItem(key, raw);
       lastSaved.current = raw;
       setStorageError("");
     } catch {
@@ -37,10 +46,10 @@ export function useWorkspace() {
         "This browser could not save your changes. Export a backup from Settings before closing this tab.",
       );
     }
-  }, [state, ready]);
+  }, [entry, key]);
   useEffect(() => {
     const sync = (e: StorageEvent) => {
-      if (e.key === KEY && e.newValue !== lastSaved.current) {
+      if (e.key === key && e.newValue !== lastSaved.current) {
         writable.current = false;
         setStorageError(
           "This workspace changed in another tab. Export this tab’s work before reloading.",
@@ -49,26 +58,30 @@ export function useWorkspace() {
     };
     window.addEventListener("storage", sync);
     return () => window.removeEventListener("storage", sync);
-  }, []);
+  }, [key]);
   const update = useCallback(
-    (fn: (s: WorkspaceState) => WorkspaceState) => setState(fn),
+    (fn: (s: WorkspaceState) => WorkspaceState) =>
+      setEntry((v) => ({ ...v, state: fn(v.state) })),
     [],
   );
-  const restore = useCallback((value: unknown) => {
-    const parsed = workspaceSchema.parse(value);
-    const raw = JSON.stringify(parsed);
-    localStorage.setItem(KEY, raw);
-    lastSaved.current = raw;
-    writable.current = true;
-    setStorageError("");
-    setState(parsed);
-  }, []);
+  const restore = useCallback(
+    (value: unknown) => {
+      const parsed = workspaceSchema.parse(value),
+        raw = JSON.stringify(parsed);
+      localStorage.setItem(key, raw);
+      lastSaved.current = raw;
+      writable.current = true;
+      setStorageError("");
+      setEntry({ key, state: parsed });
+    },
+    [key],
+  );
   return {
-    state,
+    state: entry.state,
     update,
-    ready,
+    ready: !!status && entry.key === key,
     storageError,
     restore,
-    rawBackup: () => localStorage.getItem(KEY) || JSON.stringify(state),
+    rawBackup: () => localStorage.getItem(key) || JSON.stringify(entry.state),
   };
 }

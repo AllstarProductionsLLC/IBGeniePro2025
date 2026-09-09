@@ -1,4 +1,5 @@
 "use client";
+import {apiFetch} from "@/lib/api-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowUp,
@@ -56,6 +57,8 @@ export function CoachRoom({
     [elapsed, setElapsed] = useState(0),
     [audioBlocked, setAudioBlocked] = useState(false);
   const ai = useAIStatus();
+  const stopToken = useRef<string>();
+  const voiceMaxSeconds = useRef(600);
   const audio = useRef<HTMLAudioElement>(null),
     peer = useRef<RTCPeerConnection>(),
     media = useRef<MediaStream>(),
@@ -69,6 +72,8 @@ export function CoachRoom({
     seen = useRef(new Set<string>()),
     log = useRef<HTMLDivElement>(null);
   const stopVoice = useCallback(() => {
+    const token=stopToken.current;stopToken.current=undefined;
+    if(token)void fetch("/api/realtime/end",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token}),keepalive:true}).catch(()=>{});
     epoch.current++;
     voiceRequest.current?.abort();
     if (timeout.current) clearTimeout(timeout.current);
@@ -115,6 +120,7 @@ export function CoachRoom({
     profile.role,
     profile.examYear,
     profile.examSession,
+    profile.yearGroup,
     stopVoice,
   ]);
   useEffect(() => {
@@ -128,10 +134,10 @@ export function CoachRoom({
     const t = setInterval(() => {
       const seconds = Math.floor((Date.now() - connectedAt.current) / 1000);
       setElapsed(seconds);
-      if (seconds >= 600) {
+      if (seconds >= voiceMaxSeconds.current) {
         stopVoice();
         setError(
-          "This 10-minute session has ended. Take a moment to reflect before starting another.",
+          "This voice session has ended. Take a moment to reflect before starting another.",
         );
       }
     }, 1000);
@@ -145,7 +151,8 @@ export function CoachRoom({
     ]),
   );
   const canText = ai.status?.authenticated && ai.status.text;
-  const canVoice = ai.status?.authenticated && ai.status.voice;
+  const canVoice = ai.status?.authenticated && ai.status.tier === "pro" && ai.status.voice;
+  useEffect(()=>{if(ai.status&&!canVoice)stopVoice();},[canVoice,!!ai.status,stopVoice]);
   const locked = busy || connection !== "idle";
   function switchTab(value: string) {
     request.current?.abort();
@@ -170,7 +177,7 @@ export function CoachRoom({
         parts: [{ text: m.text.slice(0, 4000) }],
       }));
     try {
-      const r = await fetch("/api/chat", {
+      const r = await apiFetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: request.current.signal,
@@ -310,7 +317,7 @@ export function CoachRoom({
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       if (attempt !== epoch.current) return;
-      const r = await fetch("/api/realtime", {
+      const r = await apiFetch("/api/realtime", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: voiceRequest.current.signal,
@@ -325,9 +332,14 @@ export function CoachRoom({
         const d = await r.json();
         throw new Error(d.error || "Voice could not connect.");
       }
-      const sdp = await r.text();
-      if (attempt !== epoch.current) return;
-      await pc.setRemoteDescription({ type: "answer", sdp });
+      const voiceSession = await r.json();
+      if (attempt !== epoch.current) {
+        void fetch("/api/realtime/end",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:voiceSession.stopToken}),keepalive:true}).catch(()=>{});
+        return;
+      }
+      stopToken.current=voiceSession.stopToken;
+      voiceMaxSeconds.current=voiceSession.maxSeconds;
+      await pc.setRemoteDescription({ type: "answer", sdp: voiceSession.sdp });
     } catch (e) {
       if (attempt !== epoch.current) return;
       stopVoice();
@@ -558,7 +570,7 @@ export function CoachRoom({
                 )}
                 <small>
                   Microphone access is requested when you start. Sessions end
-                  after 10 minutes in this interface.
+                  after {ai.status?.voiceMinutes || 10} minutes.
                 </small>
               </div>
             </TabsContent>

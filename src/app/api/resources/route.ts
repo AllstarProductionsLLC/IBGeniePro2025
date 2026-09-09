@@ -5,7 +5,13 @@ import {
   generateText,
   tutorInstructions,
 } from "@/lib/server/ai";
-import { apiFailure, ApiError, readJson, requireAI, refundUsage } from "@/lib/server/guard";
+import {
+  apiFailure,
+  ApiError,
+  readJson,
+  requireAI,
+  refundUsage,
+} from "@/lib/server/guard";
 import {
   resourceContentSchema,
   resourceKinds,
@@ -22,9 +28,9 @@ const schema = z.object({
 });
 export const maxDuration = 60;
 export async function POST(r: Request) {
-  let lease:Awaited<ReturnType<typeof requireAI>>|undefined;
+  let lease: Awaited<ReturnType<typeof requireAI>> | undefined;
   try {
-    lease = await requireAI(r,"resources");
+    lease = await requireAI(r, "resources");
     const d = schema.parse(await readJson(r));
     const prompt =
       tutorInstructions(d.profile, d.subject) +

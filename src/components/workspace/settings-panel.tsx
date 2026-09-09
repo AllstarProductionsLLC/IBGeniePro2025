@@ -28,6 +28,7 @@ import {
   dpSubjects,
   localDate,
   profileSchema,
+  yearGroups,
   workspaceSchema,
   type Profile,
   type WorkspaceState,
@@ -73,7 +74,7 @@ export function SettingsPanel({
       );
       return;
     }
-    update((s) => ({ ...s, profile: parsed.data }));
+    update((s) => ({ ...s, profile: parsed.data, onboardingComplete: true }));
     setError("");
     setNotice("Preferences saved on this device.");
   }
@@ -155,7 +156,17 @@ export function SettingsPanel({
                   { value: "student", label: "Student" },
                   { value: "teacher", label: "Teacher" },
                 ]}
-                onChange={(v) => patch({ role: v as Profile["role"] })}
+                onChange={(v) =>
+                  patch({
+                    role: v as Profile["role"],
+                    yearGroup: yearGroups(
+                      profile.program,
+                      v as Profile["role"],
+                    ).includes(profile.yearGroup)
+                      ? profile.yearGroup
+                      : "Year 1",
+                  })
+                }
               />
             </Field>
             <Field label="Programme">
@@ -179,6 +190,16 @@ export function SettingsPanel({
               />
             </Field>
           </div>
+          <Field
+            label={profile.role === "teacher" ? "Year you teach" : "Your year"}
+          >
+            <Picker
+              label="Programme year"
+              value={profile.yearGroup}
+              options={yearGroups(profile.program, profile.role)}
+              onChange={(yearGroup) => patch({ yearGroup })}
+            />
+          </Field>
           {profile.program === "dp" && (
             <div className="form-three">
               <Field label="Examination year">
@@ -305,17 +326,15 @@ export function SettingsPanel({
                 variant="outline"
                 onClick={async () => {
                   try {
-                    const r = await fetch("/api/access", { method: "DELETE" });
-                    if (!r.ok) throw new Error();
-                    await ai.refresh();
-                    setNotice("AI access locked for this browser.");
+                    await ai.signOut();
+                    setNotice("Your Wix account is disconnected from this tab.");
                   } catch {
-                    setError("Could not lock AI access. Please try again.");
+                    setError("Could not disconnect. Please try again.");
                   }
                 }}
               >
                 <LockKeyhole size={16} />
-                Lock AI access
+                Disconnect Wix
               </Button>
             )}
           </section>

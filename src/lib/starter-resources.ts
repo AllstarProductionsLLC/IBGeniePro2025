@@ -183,6 +183,7 @@ export const starterResources: Resource[] = [
 ];
 export function createWorkspace(): WorkspaceState {
   return {
+    onboardingComplete: false,
     version: 1,
     profile: { ...defaultProfile, subjects: [...defaultProfile.subjects] },
     resources: starterResources.map((r) => ({ ...r })),

@@ -42,6 +42,7 @@ import { CoachRoom } from "./coach-room";
 import { CurriculumHub } from "./curriculum-hub";
 import { CoreWorkspace } from "./core-workspace";
 import { SettingsPanel } from "./settings-panel";
+import { WelcomeFlow } from "./welcome-flow";
 export type View =
   | "today"
   | "library"
@@ -151,6 +152,16 @@ export function Workspace() {
         <GraduationCap size={36} />
         <p>Opening your workspace…</p>
       </div>
+    );
+  if (!state.onboardingComplete)
+    return (
+      <WelcomeFlow
+        initial={state.profile}
+        storageError={store.storageError}
+        onComplete={(profile) =>
+          update((s) => ({ ...s, profile, onboardingComplete: true }))
+        }
+      />
     );
   return (
     <SidebarProvider
