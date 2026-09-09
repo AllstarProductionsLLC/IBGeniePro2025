@@ -1,9 +1,11 @@
+import "server-only";
 import { z } from "zod";
 import { curriculumContext } from "@/lib/curriculum";
 import { ApiError } from "./guard";
 export const contextSchema = z.object({
   role: z.enum(["student", "teacher"]),
   program: z.enum(["dp", "myp", "pyp"]),
+  yearGroup: z.string().min(1).max(30).default("Year 1"),
   examYear: z.number().int().min(2026).max(2040),
   examSession: z.enum(["May", "November"]),
   level: z.enum(["SL", "HL"]),
@@ -16,7 +18,7 @@ export const coachModes = [
   "Feedback on my reasoning",
 ] as const;
 export function tutorInstructions(
-  p: z.infer<typeof contextSchema>,
+  p: z.input<typeof contextSchema>,
   subject: string,
   mode = "Understand a concept",
 ) {
@@ -24,7 +26,7 @@ export function tutorInstructions(
     "You are IBGenie, an independent AI learning coach, not a human, an IB employee or examiner. Help a " +
     p.role +
     " in " +
-    p.program.toUpperCase() +
+    p.program.toUpperCase() + ", " + (p.yearGroup || "Year 1") +
     ", " +
     subject +
     ", " +
@@ -60,7 +62,7 @@ export async function generateText(
           ...(json ? { responseMimeType: "application/json" } : {}),
         },
       }),
-      signal: AbortSignal.timeout(60000),
+      signal: AbortSignal.timeout(45000),
       cache: "no-store",
     },
   );

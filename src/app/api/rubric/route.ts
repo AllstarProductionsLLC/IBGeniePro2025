@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { generateText, tutorInstructions } from "@/lib/server/ai";
-import { apiFailure, readJson, requireAI } from "@/lib/server/guard";
+import { apiFailure, readJson, requireAI, refundUsage } from "@/lib/server/guard";
 export const runtime = "nodejs";
 const schema = z.object({
   rubricText: z.string().min(1).max(18000),
@@ -13,9 +13,11 @@ const schema = z.object({
     .pipe(z.enum(["dp", "myp", "pyp"])),
   examYear: z.number().int().min(2026).max(2040).default(2027),
 });
+export const maxDuration = 60;
 export async function POST(r: Request) {
+  let lease:Awaited<ReturnType<typeof requireAI>>|undefined;
   try {
-    await requireAI(r);
+    lease = await requireAI(r,"rubric");
     const d = schema.parse(await readJson(r));
     const feedback = await generateText(
       tutorInstructions(
@@ -48,6 +50,7 @@ export async function POST(r: Request) {
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (e) {
+    await refundUsage(lease);
     return apiFailure(e);
   }
 }

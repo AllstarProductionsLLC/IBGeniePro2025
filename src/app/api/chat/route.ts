@@ -11,7 +11,7 @@ import {
   ApiError,
   readJson,
   readLimited,
-  requireAI,
+  requireAI, refundUsage,
 } from "@/lib/server/guard";
 const historySchema = z
   .array(
@@ -33,9 +33,11 @@ const schema = z.object({
   history: historySchema.default([]),
 });
 export const runtime = "nodejs";
+export const maxDuration = 60;
 export async function POST(r: Request) {
+  let lease:Awaited<ReturnType<typeof requireAI>>|undefined;
   try {
-    await requireAI(r);
+    lease = await requireAI(r,"chat");
     let value: unknown;
     let attachment:
       { inlineData: { data: string; mimeType: string } } | undefined;
@@ -95,6 +97,7 @@ export async function POST(r: Request) {
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (e) {
+    await refundUsage(lease);
     return apiFailure(e);
   }
 }
