@@ -1,5 +1,5 @@
 "use client";
-import {apiFetch} from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowUp,
@@ -72,8 +72,15 @@ export function CoachRoom({
     seen = useRef(new Set<string>()),
     log = useRef<HTMLDivElement>(null);
   const stopVoice = useCallback(() => {
-    const token=stopToken.current;stopToken.current=undefined;
-    if(token)void fetch("/api/realtime/end",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token}),keepalive:true}).catch(()=>{});
+    const token = stopToken.current;
+    stopToken.current = undefined;
+    if (token)
+      void fetch("/api/realtime/end", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+        keepalive: true,
+      }).catch(() => {});
     epoch.current++;
     voiceRequest.current?.abort();
     if (timeout.current) clearTimeout(timeout.current);
@@ -151,8 +158,11 @@ export function CoachRoom({
     ]),
   );
   const canText = ai.status?.authenticated && ai.status.text;
-  const canVoice = ai.status?.authenticated && ai.status.tier === "pro" && ai.status.voice;
-  useEffect(()=>{if(ai.status&&!canVoice)stopVoice();},[canVoice,!!ai.status,stopVoice]);
+  const canVoice =
+    ai.status?.authenticated && ai.status.tier === "pro" && ai.status.voice;
+  useEffect(() => {
+    if (ai.status && !canVoice) stopVoice();
+  }, [canVoice, !!ai.status, stopVoice]);
   const locked = busy || connection !== "idle";
   function switchTab(value: string) {
     request.current?.abort();
@@ -170,12 +180,10 @@ export function CoachRoom({
     const attempt = ++textEpoch.current;
     request.current = new AbortController();
     const message = input.trim();
-    const history = messages
-      .slice(-12)
-      .map((m) => ({
-        role: m.role === "user" ? "user" : "model",
-        parts: [{ text: m.text.slice(0, 4000) }],
-      }));
+    const history = messages.slice(-12).map((m) => ({
+      role: m.role === "user" ? "user" : "model",
+      parts: [{ text: m.text.slice(0, 4000) }],
+    }));
     try {
       const r = await apiFetch("/api/chat", {
         method: "POST",
@@ -334,11 +342,16 @@ export function CoachRoom({
       }
       const voiceSession = await r.json();
       if (attempt !== epoch.current) {
-        void fetch("/api/realtime/end",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:voiceSession.stopToken}),keepalive:true}).catch(()=>{});
+        void fetch("/api/realtime/end", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: voiceSession.stopToken }),
+          keepalive: true,
+        }).catch(() => {});
         return;
       }
-      stopToken.current=voiceSession.stopToken;
-      voiceMaxSeconds.current=voiceSession.maxSeconds;
+      stopToken.current = voiceSession.stopToken;
+      voiceMaxSeconds.current = voiceSession.maxSeconds;
       await pc.setRemoteDescription({ type: "answer", sdp: voiceSession.sdp });
     } catch (e) {
       if (attempt !== epoch.current) return;

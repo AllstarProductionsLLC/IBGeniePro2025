@@ -31,10 +31,10 @@ export function assertEntitlement(
       "PRO_REQUIRED",
     );
 }
-function usageKey(session: MemberSession, capability: Capability) {
+function usageKey(session: MemberSession, capability: Capability, day: string) {
   return (
     "ibgenie:usage:" +
-    usageWindow().day +
+    day +
     ":" +
     memberKey(session.sub) +
     ":" +
@@ -42,10 +42,11 @@ function usageKey(session: MemberSession, capability: Capability) {
   );
 }
 export async function usageStatus(session: MemberSession) {
+  const window = usageWindow();
   const [text, voice] = await redis<(string | null)[]>([
       "MGET",
-      usageKey(session, "chat"),
-      usageKey(session, "voice"),
+      usageKey(session, "chat", window.day),
+      usageKey(session, "voice", window.day),
     ]),
     aiLimit = planLimit(session, "chat"),
     voiceLimit = session.tier === "pro" ? planLimit(session, "voice") : 0;
@@ -56,7 +57,7 @@ export async function usageStatus(session: MemberSession) {
     voiceUsed: Number(voice) || 0,
     voiceLimit,
     voiceRemaining: Math.max(0, voiceLimit - (Number(voice) || 0)),
-    resetsAt: new Date(usageWindow().reset).toISOString(),
+    resetsAt: new Date(window.reset).toISOString(),
   };
 }
 const reserveScript =
@@ -73,7 +74,7 @@ export async function reserveUsage(
     60,
   );
   const window = usageWindow(),
-    userKey = usageKey(session, capability),
+    userKey = usageKey(session, capability, window.day),
     globalKey =
       "ibgenie:usage:" +
       window.day +

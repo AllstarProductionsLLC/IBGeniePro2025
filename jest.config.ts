@@ -4,12 +4,13 @@ const config: Config = {
   testEnvironment: "jsdom",
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   moduleNameMapper: {
+    "^server-only$": "<rootDir>/src/test/server-only.ts",
     "^@/(.*)$": "<rootDir>/src/$1",
     "^lucide-react$":
       "<rootDir>/node_modules/lucide-react/dist/cjs/lucide-react.js",
   },
   transform: {
-    "^.+\\.tsx?$": [
+    "^.+\\.[tj]sx?$": [
       "ts-jest",
       {
         tsconfig: {

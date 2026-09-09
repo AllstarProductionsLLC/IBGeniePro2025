@@ -1,5 +1,5 @@
 "use client";
-import {apiFetch} from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
 import { useEffect, useRef, useState } from "react";
 import {
   Check,
@@ -346,7 +346,8 @@ export function ResourceStudio({
                   busy ||
                   !source.trim() ||
                   !api.status?.text ||
-                  !api.status.authenticated || api.status.tier !== "pro"
+                  !api.status.authenticated ||
+                  api.status.tier !== "pro"
                 }
                 onClick={generate}
               >

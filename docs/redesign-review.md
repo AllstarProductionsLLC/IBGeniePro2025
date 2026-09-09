@@ -14,9 +14,9 @@ The organising loop is simple: choose a topic, create a resource, practise, unde
 
 The new home gives students a due-card review, actual weekly activity, resource creation, their saved subjects and personal tasks. Teacher view prioritises lessons, quizzes, formative rubrics and exit tickets. The same library holds both manually authored and AI-drafted material, with explicit provenance and editing before use.
 
-The design uses an evergreen navigation rail, a light canvas, restrained subject colours, generous spacing and readable type. A persistent location bar and mobile navigation keep the workspace navigable as its capabilities grow. Empty states use real next actions; statistics start from zero. There are no invented learners, testimonials, class results or paid-plan promises.
+The design now follows the supplied IB Genie website: royal blue actions, navy navigation, a pale canvas, blush accents and an original pastel sky/sea SVG. The first-use screen introduces role, programme, year and subjects before the main workspace. A persistent location bar and mobile navigation keep the workspace navigable as its capabilities grow. Empty states use real next actions; statistics start from zero. There are no invented learners, testimonials, class results or paid-plan promises.
 
-The result is an implemented pilot application, not a guarantee of commercial success.
+The branch implements the learning workspace and Wix access integration. Commercial performance and live deployment readiness still depend on real member testing and the configuration described in the deployment guide.
 
 ## Research translated into features
 
@@ -50,30 +50,28 @@ The curriculum snapshot is intentionally bounded. Public pages are not complete 
 
 The work retains Next.js and the original UI primitives, adds a structured learning domain and a responsive workspace, upgrades Next.js to 15.5.25, and makes TypeScript errors fail the build. Existing classic chat remains available.
 
-Validation completed on the recovered app:
+The current validation includes TypeScript, Jest, a production build, client bundle credential checks, and real Redis quota tests in GitHub CI. The normal CI build uses Node.js 22. A portable build is available for restricted environments where native SWC or Node memory counters are unavailable.
 
-- TypeScript checks passed.
-- Four Jest suites, 21 tests passed, including a quiz interaction that verifies the complete mistake-to-flashcard flow.
-- Optimized production build passed using the documented portable WebAssembly build in this environment.
-- No production deployment or merge was performed.
-
-The normal build remains the CI default on Node.js 22. The portable path is necessary here because native SWC and Node memory counters hit runtime restrictions. It does not change the deployed AI logic.
-
-Live Gemini generation, OpenAI audio, browser layout, keyboard navigation, mobile device behaviour and printing have not been verified in a real browser during this implementation. Those are explicit launch checks, not claimed successes.
+Live Gemini generation, OpenAI audio, the published Wix bridge, browser layout, keyboard navigation, mobile behaviour and printing have not been verified against the owner's deployment. Those checks are listed in [the Vercel and Wix setup guide](vercel-wix-setup.md).
 
 ## Launch sequence
 
-1. Run a supervised pilot with a few teachers and students. Verify first useful resource time, repeated study sessions, resource edits, abandoned AI requests and whether mistakes lead to later recall. Validate usefulness before expanding the feature count.
-2. Add individual school accounts, tenant isolation, role authorization, cloud persistence, backups, retention/deletion controls and appropriate consent flows. The shared access code is not an identity system.
-3. Establish a curriculum editor workflow with licensed content where required, subject/session/version metadata and reviewed retrieval sources. Never present generated content as official IB material.
-4. Verify live provider behaviour, supported browsers, microphone denial, interrupted calls, text and voice moderation, accessibility, exports and recovery. Establish account-level metering and server-enforced call termination.
-5. Add classroom assignment distribution, teacher review and LMS integration once identity and data permissions exist. Validate those workflows with teachers before building broad dashboards.
-6. Introduce subscriptions after measuring real provider and support costs. Implement actual billing, entitlements and cancellation flows; avoid decorative pricing or unconnected checkout.
+1. Install the supplied Wix backend and page files, enter the Vercel values and actual paid plan IDs, and verify the published site using free and paid test members.
+2. Verify provider access, microphone permission, interruptions, QStash delivery and actual server hangup. Set provider budgets and monitor failed jobs and costs.
+3. Run a supervised pilot with teachers and students. Measure time to a useful resource, repeated study, resource edits and whether mistakes lead to later recall.
+4. Maintain a curriculum editor workflow with licensed guides where required. Review session-specific changes before publishing revised summaries.
+5. Add cloud persistence, school administration and classroom distribution only with appropriate data permissions and validated teacher workflows.
 
 ## Operational limits
 
-Server protections include same-origin checks, signed HttpOnly cookies, bounded request streams, schema validation, sanitized provider errors and durable Redis-backed request limits in production. Text requests are limited to 15/minute per session and 300/workspace/24-hour window; voice starts to 3/minute per session and 30/workspace/24-hour window.
+Wix assertions bind a verified member and eligible paid plan IDs to a nonce, audience, issuer and short expiry. Redis consumes assertions once and stores revocable five-minute app sessions. Exact origin checks, bounded request bodies, validated output and sanitized errors protect the API routes. A browser Pro flag or selected teacher role cannot authorize a premium API request.
 
-These do not create a hard currency budget or a mature abuse-prevention system. A client can bypass the ten-minute UI cutoff, so a paid public launch needs server-enforced voice duration and provider spending controls. Sharing a pilot code also allows new sessions; it is not per-person enforcement. Prompt instructions support academic integrity but are not a complete moderation or safeguarding system.
+The default free allowance is 10 daily AI text requests. Pro allows 200 daily combined AI requests and 10 voice starts. Quotas are durable across sessions and devices, with separate workspace ceilings and a midnight UTC reset. Failed requests refund daily reservations. Per-minute rate limits remain in place.
 
-The app stores learning data in this browser only. It handles invalid backups and storage errors visibly, keeps an original corrupt saved copy, and stops overwriting when another tab changes the workspace. It does not encrypt localStorage or isolate users sharing a browser profile. AI conversations stay in memory unless exported, and provider processing still applies to submitted data.
+Voice termination is scheduled on the server and uses OpenAI's hangup endpoint. Delayed delivery and provider outages can affect exact timing, so request limits and scheduled termination do not replace provider budget monitoring.
+
+Learning data is stored in the browser. Member-specific keys prevent the normal interface from mixing workspaces, but are not encryption or cloud data isolation. Invalid backups are preserved and cross-tab conflicts stop overwriting. Conversations stay in memory unless exported; submitted content is still processed by the relevant AI provider.
+
+## Supplied ZIP review
+
+The old ZIP used `AUTH_STATUS` with a client-supplied `isPro` flag and a resettable browser usage counter. It did not include the Wix backend, private environment values or Firebase credentials. The new bridge uses server-verified current-member orders and preserves the existing `https://www.ibgenie.com/plans-pricing` upgrade destination. Installation details and primary API references are in the setup guide.

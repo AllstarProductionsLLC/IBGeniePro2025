@@ -327,7 +327,9 @@ export function SettingsPanel({
                 onClick={async () => {
                   try {
                     await ai.signOut();
-                    setNotice("Your Wix account is disconnected from this tab.");
+                    setNotice(
+                      "Your Wix account is disconnected from this tab.",
+                    );
                   } catch {
                     setError("Could not disconnect. Please try again.");
                   }

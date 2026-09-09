@@ -1,73 +1,100 @@
 /** @jest-environment node */
-import { NextResponse } from "next/server";
 import {
   accessConfigured,
-  createAccessCookie,
   readJson,
   readLimited,
   requireAI,
   sameOrigin,
-  sessionIdentity,
+  ApiError,
 } from "./guard";
+import { requireMember } from "./membership";
+import { reserveUsage } from "./quota";
+import { publicAccessConfig } from "./config";
+import { POST as resources } from "@/app/api/resources/route";
+import { POST as rubric } from "@/app/api/rubric/route";
+import { POST as voice } from "@/app/api/realtime/route";
+import { serverEnv, session } from "@/test/server-env";
+jest.mock("./membership", () => ({ requireMember: jest.fn() }));
+jest.mock("./quota", () => ({
+  ...jest.requireActual("./quota"),
+  reserveUsage: jest.fn(),
+}));
 const original = { ...process.env };
 beforeEach(() => {
-  process.env = {
-    ...original,
-    NODE_ENV: "test",
-    APP_ORIGIN: "https://example.test",
-    AI_ACCESS_CODE: "test-code-only-123456",
-    SESSION_SECRET: "a-test-only-secret-with-more-than-32-characters",
-    GEMINI_API_KEY: "test-placeholder",
-  };
-  delete process.env.UPSTASH_REDIS_REST_URL;
-  delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  process.env = { ...original, ...serverEnv, NODE_ENV: "test" };
+  jest.clearAllMocks();
+  jest
+    .mocked(requireMember)
+    .mockRejectedValue(new ApiError(401, "Sign in first."));
 });
 afterAll(() => {
   process.env = original;
 });
-function req(headers: Record<string, string> = {}) {
-  return new Request("https://example.test/api/chat", {
+function req(headers: Record<string, string> = {}, body?: string) {
+  return new Request(serverEnv.APP_ORIGIN + "/api/chat", {
     method: "POST",
-    headers: { origin: "https://example.test", ...headers },
+    headers: { origin: serverEnv.APP_ORIGIN, ...headers },
+    body,
   });
 }
-describe("AI request boundaries", () => {
-  it("rejects cross-origin and missing-origin requests", () => {
-    expect(() => sameOrigin(req({ origin: "https://other.test" }))).toThrow();
-    expect(() =>
-      sameOrigin(new Request("https://example.test/api/chat")),
-    ).toThrow();
-    expect(() => sameOrigin(req())).not.toThrow();
-  });
-  it("requires access before any AI request is accepted", async () => {
-    await expect(requireAI(req())).rejects.toMatchObject({ status: 401 });
-  });
-  it("accepts a signed cookie and rejects tampering", () => {
-    const response = NextResponse.json({ ok: true });
-    createAccessCookie(response);
-    const cookie = response.headers.get("set-cookie")!.split(";")[0];
-    expect(sessionIdentity(req({ cookie }))).toMatch(/^[a-f0-9]{32}$/);
-    expect(sessionIdentity(req({ cookie: cookie + "x" }))).toBeNull();
-    expect(response.headers.get("set-cookie")).toMatch(/HttpOnly/i);
-    expect(response.headers.get("set-cookie")).toMatch(/SameSite=strict/i);
-  });
-  it("fails closed in production without durable rate limiting", async () => {
-    process.env = { ...process.env, NODE_ENV: "production" };
-    expect(accessConfigured()).toBe(false);
-    await expect(requireAI(req())).rejects.toMatchObject({ status: 503 });
-  });
-  it("limits streamed bytes even without a content-length header", async () => {
-    const r = new Request("https://example.test", {
-      method: "POST",
-      body: "x".repeat(101),
-    });
-    await expect(readLimited(r, 100)).rejects.toMatchObject({ status: 413 });
-  });
-  it("returns a client error for malformed JSON", async () => {
-    const r = new Request("https://example.test", {
-      method: "POST",
-      body: "{invalid",
-    });
-    await expect(readJson(r)).rejects.toMatchObject({ status: 400 });
+it("rejects cross-origin and missing-origin requests", () => {
+  expect(() => sameOrigin(req({ origin: "https://attacker.test" }))).toThrow();
+  expect(() =>
+    sameOrigin(new Request(serverEnv.APP_ORIGIN + "/api/chat")),
+  ).toThrow();
+  expect(() => sameOrigin(req())).not.toThrow();
+});
+it("requires a verified member before AI", async () => {
+  await expect(requireAI(req())).rejects.toMatchObject({ status: 401 });
+  expect(reserveUsage).not.toHaveBeenCalled();
+});
+it.each([resources, rubric, voice])(
+  "blocks free members at the premium API even with a forged Pro body",
+  async (handler) => {
+    jest.mocked(requireMember).mockResolvedValue(session());
+    const response = await handler(
+      req(
+        {},
+        JSON.stringify({
+          isPro: true,
+          tier: "pro",
+          roles: ["admin"],
+          plans: ["Ultimate Pro"],
+        }),
+      ),
+    );
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({ code: "PRO_REQUIRED" });
+    expect(reserveUsage).not.toHaveBeenCalled();
+  },
+);
+it("fails closed without durable storage", async () => {
+  delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  expect(accessConfigured()).toBe(false);
+  await expect(requireAI(req())).rejects.toMatchObject({ status: 503 });
+});
+it("rejects reused signing secrets and keeps secrets out of public configuration", () => {
+  expect(accessConfigured()).toBe(true);
+  const exposed = JSON.stringify(publicAccessConfig());
+  for (const key of [
+    "WIX_BRIDGE_SECRET",
+    "SESSION_SECRET",
+    "GEMINI_API_KEY",
+    "OPENAI_API_KEY",
+    "QSTASH_TOKEN",
+    "UPSTASH_REDIS_REST_TOKEN",
+  ])
+    expect(exposed).not.toContain(process.env[key]);
+  process.env.SESSION_SECRET = process.env.WIX_BRIDGE_SECRET;
+  expect(accessConfigured()).toBe(false);
+});
+it("limits streamed bytes without content-length", async () => {
+  await expect(
+    readLimited(req({}, "x".repeat(101)), 100),
+  ).rejects.toMatchObject({ status: 413 });
+});
+it("rejects malformed JSON", async () => {
+  await expect(readJson(req({}, "{invalid"))).rejects.toMatchObject({
+    status: 400,
   });
 });

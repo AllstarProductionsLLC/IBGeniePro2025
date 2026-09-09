@@ -4,7 +4,8 @@ An independent learning workspace for IB students and teachers. The redesign bri
 
 ## What works
 
-- Student and teacher workspaces, with DP, MYP and PYP context and editable subject preferences.
+- A branded first-use welcome flow for students and teachers, with programme, year, exam session, level and subject choices remembered in this browser and editable in Profile & settings.
+- Royal blue, navy, pastel sky and blush colours inspired by the IB Genie website, with an original SVG welcome illustration.
 - A resource studio for flashcards, quizzes, study guides, lesson plans, formative rubrics and exit tickets. Create manually or generate an editable AI draft from your topic and notes.
 - A searchable resource library with favourites, Markdown export, flashcard CSV for Anki, and print-to-PDF through the browser. Quiz exports can omit the answer key.
 - Flashcard review scheduling based on recall ratings. Quizzes support immediate feedback or timed practice, explain answers, record attempts and turn mistakes into review cards.
@@ -27,31 +28,13 @@ Use Node.js 22 and npm.
 
 Open http://localhost:9002. Manual creation, review, quizzes, planning and backups work without AI credentials. AI controls explain when a connection has not been configured.
 
-## Connect AI for a supervised pilot
+## Connect Wix and deploy on Vercel
 
-All settings below belong on the server. Never put secrets in NEXT_PUBLIC_ variables or commit .env.local.
+Follow [the Vercel and Wix installation guide](docs/vercel-wix-setup.md). It lists the exact environment variables, Wix Secrets Manager entries, backend modules, page code and deployment-specific acceptance checks. Never put server credentials in `NEXT_PUBLIC_` variables or in Wix page code.
 
-| Variable                 | Purpose                                                                     |
-| ------------------------ | --------------------------------------------------------------------------- |
-| GEMINI_API_KEY           | Enables text coaching and resource generation                               |
-| GEMINI_MODEL             | Defaults to gemini-3.8-flash; choose a model your provider account can use  |
-| OPENAI_API_KEY           | Enables realtime voice                                                      |
-| OPENAI_REALTIME_MODEL    | Defaults to gpt-realtime-2.1; requires account access                       |
-| AI_ACCESS_CODE           | A pilot access code of at least 12 characters                               |
-| SESSION_SECRET           | At least 32 cryptographically random characters for signing session cookies |
-| APP_ORIGIN               | Exact production HTTPS origin, without a trailing slash                     |
-| UPSTASH_REDIS_REST_URL   | HTTPS Redis REST endpoint for shared rate limits                            |
-| UPSTASH_REDIS_REST_TOKEN | Server credential for that endpoint                                         |
+The app verifies signed Wix member assertions and approved paid plan IDs. Free members receive 10 AI text messages per UTC day by default. Pro members can use resource generation, formative rubric feedback and realtime voice within configurable allowances. Redis enforces per-member and workspace quotas across sessions and devices. A shared pilot code is no longer used.
 
-Enter the pilot code in Settings or an AI tool. Access uses a signed, HttpOnly, SameSite=Strict cookie lasting eight hours. This is a shared pilot gate, not an individual school identity or subscription system.
-
-Production AI fails closed unless APP_ORIGIN and both Redis settings are configured. Development and tests can use an in-memory limiter. Text requests are limited to 15 per minute per session and 300 per 24-hour workspace window; voice starts are limited to 3 per minute per session and 30 per 24-hour workspace window. Limits are shared across server instances when Redis is configured.
-
-These are request limits, not a spending guarantee. The ten-minute voice cutoff is enforced by the client interface and is not a tamper-proof server cost cap. Configure provider budgets and implement account-level metering and server-enforced call termination before a public paid launch.
-
-Voice requires HTTPS (or localhost), a supported browser, microphone permission and a configured OpenAI account. The server exchanges the SDP offer with OpenAI; the long-lived API key never reaches the browser. Audio is sent to OpenAI. Text, selected notes and course context are sent to Google. Conversations are not automatically stored in the new workspace; users can export the visible transcript.
-
-No live provider or microphone call was made during this implementation. Verify model access, latency, interruption, transcription, permission denial, disconnection and actual usage in your deployment.
+Voice uses server-held OpenAI credentials and a signed QStash job to schedule server termination. Both services must be configured before voice is enabled. See the guide for embedded microphone permissions, the five-minute new-tab handoff, delivery monitoring and provider budget controls.
 
 ## Curriculum accuracy
 
@@ -69,7 +52,7 @@ The maintenance script flags stale snapshots, newer published update dates, inac
     npm test -- --runInBand
     npm run build
 
-The recovered implementation passed TypeScript checks, 21 tests and an optimized production build. Tests cover resource validation, CSV formula handling, quiz answer-key export, recall scheduling, cohort transitions, AI access boundaries and the mistake-to-review-card interaction.
+Tests cover resource validation, recall scheduling, cohort transitions, the mistake-to-review-card interaction, signed Wix assertions, order eligibility, forged Pro claims, replay protection, session revocation, voice termination and account-scoped onboarding. CI also runs real Redis Lua and concurrent quota tests using a disposable Redis service. Run `node scripts/check-client-secrets.mjs` after building to inspect client assets for server credential references.
 
 In restricted environments where native SWC or /proc memory counters are unavailable:
 
@@ -93,6 +76,6 @@ The existing Next.js App Router, TypeScript, React, Tailwind and Radix foundatio
 
 The old prompt CRUD endpoints returned data from browser storage inside server handlers. They now return 410; the new resource library replaces that broken path. Classic chat remains available, with its AI requests passing through the protected server route.
 
-The repository’s Firebase initialization is retained, but individual accounts, tenant isolation, cloud sync, classroom assignment distribution, subscriptions, billing and administrative controls are not implemented by this redesign. Device-local resources are accessible to anyone using the same browser profile. Export backups before clearing browser data. Do not place identifying student information in shared-device workspaces or AI prompts.
+Wix supplies member identity, checkout and subscription records; the app verifies access on its server. Learning data remains device-local and uses separate keys for verified members. Firebase is not needed for this integration; the original initializer remains unused. Cloud sync, classroom assignment distribution and school administration are not implemented. Local storage is not encrypted, and anyone with access to the browser profile can inspect it, including classic chat history. Export backups before clearing browser data.
 
 IBGenie Pro is independent of the International Baccalaureate Organization. AI output and starter activities are formative resources, not official IB assessments or predicted grades.
