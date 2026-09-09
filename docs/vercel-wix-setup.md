@@ -4,7 +4,7 @@ This branch adds the Wix connection and production access controls. Installing t
 
 ## Vercel environment variables
 
-Use the existing Next.js Vercel project with Node.js 22, `npm ci`, and `npm run build`. Enter variables in the project's **Environment Variables** settings for the intended environment, then redeploy. Select **Secret** for credentials. Vercel's current dashboard distinguishes readable Config values from write-only Secret values. Never use `NEXT_PUBLIC_` for a credential, put credentials in page code, or commit `.env.local`. [Vercel environment variable types](https://vercel.com/docs/environment-variables/sensitive-environment-variables)
+Use the existing Next.js Vercel project with Node.js 22.13 or newer in the 22.x series, `npm ci`, and `npm run build`. Enter variables in the project's **Environment Variables** settings for the intended environment, then redeploy. Select **Secret** for credentials. Vercel's current dashboard distinguishes readable Config values from write-only Secret values. Never use `NEXT_PUBLIC_` for a credential, put credentials in page code, or commit `.env.local`. [Vercel environment variable types](https://vercel.com/docs/environment-variables/sensitive-environment-variables)
 
 | Variable                   | Type   | Value to enter                                                                                                                                         |
 | -------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -90,9 +90,25 @@ This is not cloud sync or encrypted storage. Anyone with access to the browser p
 
 The supplied ZIP contained a browser `isPro` message and a local usage counter, but no Wix backend module, Firebase credentials, `.env` values or private service account. Its upgrade URL has been preserved. The repo's old Firebase initializer remains unused by this integration. No Firebase key is required for Wix membership or quotas, and no credential was copied into client code.
 
+## Teaching tools and branded exports
+
+No additional environment keys are needed for classroom presentations, scope and sequence, feedback, grammar or document export. AI drafting uses the existing private `GEMINI_API_KEY`. Feedback uses the Pro rubric allowance; grammar and planning use the Pro resource allowance. All new endpoints apply the same signed Wix membership, origin checks and Redis quotas. Manual editing, practice games and downloads work without an AI request.
+
+`npm ci` runs `scripts/prepare-workers.mjs`, which copies the pinned PDF.js worker and licence into `public/workers`. Keep install scripts enabled. The production build also prepares this worker. PDF, Word and PPTX generation runs in the browser and needs no document-generation API key or cloud storage. The Next.js Webpack configuration excludes PptxGenJS's Node-only filesystem/network modules from client builds, following its [integration guidance](https://gitbrent.github.io/PptxGenJS/docs/integration/).
+
+The PDF download is generated directly with an IBgenie.com footer, so it does not inherit a Vercel address from browser print headers. PowerPoint/Word properties, slide footers, document footers and exported notes use `https://IBgenie.com`. Use **Download PDF** and print that file for handouts. The browser's own Print command can still show the actual page address if its headers/footers option is enabled. A page cannot rename the browser's address bar.
+
+For the app address itself, add and verify `app.ibgenie.com` (or the intended custom subdomain) in the Vercel project's Domains settings, following the DNS records Vercel gives you. Keep the Wix website on its existing root/www domains. Update `APP_ORIGIN`, the Wix `IBGENIE_APP_ORIGIN` secret and the Wix embed address to the verified app domain together. This code does not change DNS or deploy a custom domain. [Vercel custom domains](https://vercel.com/docs/domains/working-with-domains/add-a-domain)
+
+Fullscreen presentation requires browser and parent-frame permission. If the Wix embed disallows fullscreen, open the app in a separate tab or use the downloaded PPTX. Speaker notes remain outside the fullscreen slide surface. Slides are native editable text and notes; Google Slides can import the PPTX, but this is not a direct Google account integration. [Google Slides import](https://support.google.com/docs/answer/9310378)
+
+See [the teaching and learning tools guide](teaching-learning-tools.md) for rubric, feedback, local data and upload boundaries.
+
 ## Live acceptance checks before launch
 
-Use the published Wix page and dedicated test members. Confirm a guest cannot call paid APIs, a free member gets the configured allowance across two devices, and message 11 receives `DAILY_LIMIT`. Check an approved paid member can generate a resource, obtain rubric feedback and start voice. Verify a similarly named but unapproved plan does not unlock Pro. Test refund, failed payment, pause, immediate cancellation, cancellation at renewal and expiry.
+Use the published Wix page and dedicated test members. Confirm a guest cannot call paid APIs, a free member gets the configured allowance across two devices, and message 11 receives `DAILY_LIMIT`. Check an approved paid member can generate classroom slides, a complete multi-year sequence, feedback with a supplied rubric, a grammar review and voice. Confirm free and disconnected members cannot call `/api/feedback` or `/api/grammar`. Verify a similarly named but unapproved plan does not unlock Pro. Test refund, failed payment, pause, immediate cancellation, cancellation at renewal and expiry.
+
+Check a PYP student sees games and inquiry prompts, an MYP student sees concept practice and appropriate projects, and a DP student sees advanced practice and core notebooks. Confirm student view has no lesson-planning actions. Download and open PPTX in PowerPoint/Google Slides, print a generated PDF, try PDF/DOCX work uploads, and review the extracted text.
 
 Reload to check remembered onboarding, edit the profile, and switch members to verify the correct local workspace loads. Check keyboard navigation, mobile layout, denied microphone permission, interruptions and disconnects. For voice, temporarily set `VOICE_SESSION_MINUTES=1` in staging and verify QStash delivery actually ends the provider call, even with the browser timer disabled. Restore the intended limit afterward.
 

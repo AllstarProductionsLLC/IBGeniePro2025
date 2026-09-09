@@ -1,5 +1,14 @@
 import { z } from "zod";
-import { presentationSchema, sequenceSchema, assessmentRecordSchema, learnerSchema, presentationMarkdown, sequenceMarkdown, BRAND_URL, programYears } from "./learning-tools";
+import {
+  presentationSchema,
+  sequenceSchema,
+  assessmentRecordSchema,
+  learnerSchema,
+  presentationMarkdown,
+  sequenceMarkdown,
+  BRAND_URL,
+  programYears,
+} from "./learning-tools";
 export const resourceKinds = [
   "flashcards",
   "quiz",
@@ -123,10 +132,31 @@ export const resourceSchema = resourceContentSchema
       ctx.addIssue({ code: "custom", message: "Add at least one flashcard" });
     if (r.kind === "quiz" && !r.questions.length)
       ctx.addIssue({ code: "custom", message: "Add at least one question" });
-    if (!["flashcards", "quiz", "presentation", "scope-sequence"].includes(r.kind) && !r.body.trim())
+    if (
+      !["flashcards", "quiz", "presentation", "scope-sequence"].includes(
+        r.kind,
+      ) &&
+      !r.body.trim()
+    )
       ctx.addIssue({ code: "custom", message: "Add resource content" });
-    if (r.kind === "presentation" && !r.presentation) ctx.addIssue({code:"custom", message:"Add presentation slides"});
-    if (r.kind === "scope-sequence" && (!r.sequence || r.sequence.years > programYears[r.program])) ctx.addIssue({code:"custom", message:"Check programme years and sequence units"});
+    if (
+      (r.presentation && r.kind !== "presentation") ||
+      (r.sequence && r.kind !== "scope-sequence")
+    )
+      ctx.addIssue({
+        code: "custom",
+        message: "Content must match the resource type",
+      });
+    if (r.kind === "presentation" && !r.presentation)
+      ctx.addIssue({ code: "custom", message: "Add presentation slides" });
+    if (
+      r.kind === "scope-sequence" &&
+      (!r.sequence || r.sequence.years > programYears[r.program])
+    )
+      ctx.addIssue({
+        code: "custom",
+        message: "Check programme years and sequence units",
+      });
     if (
       new Set(r.cards.map((c) => c.id)).size !== r.cards.length ||
       new Set(r.questions.map((c) => c.id)).size !== r.questions.length
@@ -262,7 +292,11 @@ export function resourceMarkdown(r: Resource, answers = true) {
     "\n\n" +
     r.summary +
     "\n\n" +
-    (r.presentation ? presentationMarkdown(r.presentation) : r.sequence ? sequenceMarkdown(r.sequence)+"\n\n"+r.body : r.body) +
+    (r.presentation
+      ? presentationMarkdown(r.presentation)
+      : r.sequence
+        ? sequenceMarkdown(r.sequence) + "\n\n" + r.body
+        : r.body) +
     "\n\n" +
     r.cards.map((c) => "## " + c.front + "\n\n" + c.back).join("\n\n") +
     r.questions
@@ -286,7 +320,9 @@ export function resourceMarkdown(r: Resource, answers = true) {
       .join("") +
     "\n\n---\nIndependent practice resource. " +
     (r.origin === "ai" ? "AI draft: review before use. " : "") +
-    "Not an official IB assessment.\n\n" + BRAND_URL + "\n"
+    "Not an official IB assessment.\n\n" +
+    BRAND_URL +
+    "\n"
   );
 }
 export function downloadText(

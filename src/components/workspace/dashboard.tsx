@@ -36,7 +36,8 @@ type Props = {
 };
 export function Dashboard({ state, update, go, create, study, coach }: Props) {
   const teacher = state.profile.role === "teacher";
-  if (teacher) return <TeacherDashboard state={state} go={go} create={create}/>;
+  if (teacher)
+    return <TeacherDashboard state={state} go={go} create={create} />;
   const program = state.profile.program;
   const due = state.resources
     .filter(
@@ -83,12 +84,19 @@ export function Dashboard({ state, update, go, create, study, coach }: Props) {
       <div className="page-heading">
         <div>
           <div className="eyebrow">
-            {program.toUpperCase()} · {state.profile.yearGroup}{program === "dp" ? " · "+state.profile.examSession+" "+state.profile.examYear : ""}
+            {program.toUpperCase()} · {state.profile.yearGroup}
+            {program === "dp"
+              ? " · " + state.profile.examSession + " " + state.profile.examYear
+              : ""}
           </div>
           <h1>
             {teacher
               ? "A little inspiration" + name + "."
-              : program === "pyp" ? "What will you discover"+name+"?" : program === "myp" ? "Make a new connection"+name+"." : "Your next breakthrough" + name + "."}
+              : program === "pyp"
+                ? "What will you discover" + name + "?"
+                : program === "myp"
+                  ? "Make a new connection" + name + "."
+                  : "Your next breakthrough" + name + "."}
           </h1>
           <p>
             {teacher
@@ -121,9 +129,19 @@ export function Dashboard({ state, update, go, create, study, coach }: Props) {
               </>
             ) : (
               <>
-                {program === "pyp" ? "Play with an idea." : program === "myp" ? "Make the connections." : "Build your understanding."}
+                {program === "pyp"
+                  ? "Play with an idea."
+                  : program === "myp"
+                    ? "Make the connections."
+                    : "Build your understanding."}
                 <br />
-                <span>{program === "pyp" ? "See where it takes you." : program === "myp" ? "Try it in a new way." : "One good session at a time."}</span>
+                <span>
+                  {program === "pyp"
+                    ? "See where it takes you."
+                    : program === "myp"
+                      ? "Try it in a new way."
+                      : "One good session at a time."}
+                </span>
               </>
             )}
           </h2>
@@ -141,16 +159,20 @@ export function Dashboard({ state, update, go, create, study, coach }: Props) {
               onClick={() =>
                 teacher
                   ? create("lesson-plan")
-                  : program === "pyp" ? go("practice") : due[0]
-                    ? study(due[0].resource)
-                    : create("flashcards")
+                  : program === "pyp"
+                    ? go("practice")
+                    : due[0]
+                      ? study(due[0].resource)
+                      : create("flashcards")
               }
             >
               {teacher
                 ? "Plan a lesson"
-                : program === "pyp" ? "Play and discover" : due[0]
-                  ? "Start a quick review"
-                  : "Create flashcards"}
+                : program === "pyp"
+                  ? "Play and discover"
+                  : due[0]
+                    ? "Start a quick review"
+                    : "Create flashcards"}
               <ArrowRight size={17} />
             </Button>
             <button className="banner-secondary" onClick={() => go("planner")}>
@@ -220,9 +242,36 @@ export function Dashboard({ state, update, go, create, study, coach }: Props) {
         </section>
       </div>
       <div className="student-pathways">
-        <button onClick={()=>go("practice")}><span>01</span><strong>{program === "pyp" ? "Play and discover" : program === "myp" ? "Concept challenges" : "Recall and reasoning"}</strong><p>{program === "pyp" ? "Match words, make predictions, try again." : "Connect ideas, test yourself and apply what you know."}</p><ArrowRight size={18}/></button>
-        <button onClick={()=>go("assessment")}><span>02</span><strong>{program === "pyp" ? "Look at my learning" : "Check my work"}</strong><p>See strengths and next steps in your own assignment.</p><ArrowRight size={18}/></button>
-        <button onClick={()=>go("grammar")}><span>03</span><strong>My writing lab</strong><p>Learn why an edit helps, and keep your own voice.</p><ArrowRight size={18}/></button>
+        <button onClick={() => go("practice")}>
+          <span>01</span>
+          <strong>
+            {program === "pyp"
+              ? "Play and discover"
+              : program === "myp"
+                ? "Concept challenges"
+                : "Recall and reasoning"}
+          </strong>
+          <p>
+            {program === "pyp"
+              ? "Match words, make predictions, try again."
+              : "Connect ideas, test yourself and apply what you know."}
+          </p>
+          <ArrowRight size={18} />
+        </button>
+        <button onClick={() => go("assessment")}>
+          <span>02</span>
+          <strong>
+            {program === "pyp" ? "Look at my learning" : "Check my work"}
+          </strong>
+          <p>See strengths and next steps in your own assignment.</p>
+          <ArrowRight size={18} />
+        </button>
+        <button onClick={() => go("grammar")}>
+          <span>03</span>
+          <strong>My writing lab</strong>
+          <p>Learn why an edit helps, and keep your own voice.</p>
+          <ArrowRight size={18} />
+        </button>
       </div>
       <section className="quick-create">
         <div className="section-heading">

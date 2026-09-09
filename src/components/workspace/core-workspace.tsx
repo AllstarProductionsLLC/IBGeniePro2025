@@ -9,10 +9,69 @@ import { ExportActions } from "./export-actions";
 import { BRAND_URL } from "@/lib/learning-tools";
 import { Field, SourceLink, type Update } from "./shared";
 const projects = {
-  "pyp-inquiry": {label:"My inquiry",subject:"Inquiry",title:"Start with a wonder.",description:"Notice, ask, explore and share what you discover.",url:"https://ibo.org/programmes/primary-years-programme/curriculum/the-learner/",fields:["What I wonder about","What I already notice","How I could find out more","What I tried or discovered","A new question I have","How I can share my learning"]},
-  "pyp-action": {label:"My action",subject:"Inquiry",title:"A small action can make a difference.",description:"Think about how your learning connects to people and places around you.",url:"https://ibo.org/programmes/primary-years-programme/curriculum/the-learner/",fields:["Something I care about","An action I could take","Who could help me","What I actually did","What I noticed afterwards","What I might do next"]},
-  "myp-project": {label:"Personal project",subject:"Personal project",title:"Learn something. Make something. Reflect.",description:"Keep your learning goal, evidence and thinking together. Confirm the project requirements with your supervisor.",url:"https://ibo.org/programmes/middle-years-programme/curriculum/myp-projects/",fields:["My learning goal and personal interest","My intended product and success criteria","My action plan","ATL skills I am applying","Evidence of my progress","What I learned and how I would improve"]},
-  "myp-inquiry": {label:"Inquiry and service",subject:"Inquiry",title:"Connect learning with your community.",description:"Explore a meaningful question and reflect on your contribution.",url:"https://ibo.org/programmes/middle-years-programme/curriculum/",fields:["My question and its context","What I need to investigate","Different perspectives to consider","My contribution or action","Evidence and feedback","What I will try next"]},
+  "pyp-inquiry": {
+    label: "My inquiry",
+    subject: "Inquiry",
+    title: "Start with a wonder.",
+    description: "Notice, ask, explore and share what you discover.",
+    url: "https://ibo.org/programmes/primary-years-programme/curriculum/the-learner/",
+    fields: [
+      "What I wonder about",
+      "What I already notice",
+      "How I could find out more",
+      "What I tried or discovered",
+      "A new question I have",
+      "How I can share my learning",
+    ],
+  },
+  "pyp-action": {
+    label: "My action",
+    subject: "Inquiry",
+    title: "A small action can make a difference.",
+    description:
+      "Think about how your learning connects to people and places around you.",
+    url: "https://ibo.org/programmes/primary-years-programme/curriculum/the-learner/",
+    fields: [
+      "Something I care about",
+      "An action I could take",
+      "Who could help me",
+      "What I actually did",
+      "What I noticed afterwards",
+      "What I might do next",
+    ],
+  },
+  "myp-project": {
+    label: "Personal project",
+    subject: "Personal project",
+    title: "Learn something. Make something. Reflect.",
+    description:
+      "Keep your learning goal, evidence and thinking together. Confirm the project requirements with your supervisor.",
+    url: "https://ibo.org/programmes/middle-years-programme/curriculum/myp-projects/",
+    fields: [
+      "My learning goal and personal interest",
+      "My intended product and success criteria",
+      "My action plan",
+      "ATL skills I am applying",
+      "Evidence of my progress",
+      "What I learned and how I would improve",
+    ],
+  },
+  "myp-inquiry": {
+    label: "Inquiry and service",
+    subject: "Inquiry",
+    title: "Connect learning with your community.",
+    description:
+      "Explore a meaningful question and reflect on your contribution.",
+    url: "https://ibo.org/programmes/middle-years-programme/curriculum/",
+    fields: [
+      "My question and its context",
+      "What I need to investigate",
+      "Different perspectives to consider",
+      "My contribution or action",
+      "Evidence and feedback",
+      "What I will try next",
+    ],
+  },
   ee: {
     label: "Extended essay",
     subject: "Extended essay",
@@ -85,10 +144,30 @@ export function CoreWorkspace({
   update: Update;
   coach: (s: string) => void;
 }) {
-  const [tab, setTab] = useState<keyof typeof projects>(state.profile.program === "pyp" ? "pyp-inquiry" : state.profile.program === "myp" ? "myp-project" : "ee");
+  const [tab, setTab] = useState<keyof typeof projects>(
+    state.profile.program === "pyp"
+      ? "pyp-inquiry"
+      : state.profile.program === "myp"
+        ? state.profile.yearGroup === "Year 5"
+          ? "myp-project"
+          : "myp-inquiry"
+        : "ee",
+  );
   const project = projects[tab];
-  const markdown="# "+project.label+"\n\n"+project.fields.map((f,i)=>"## "+f+"\n\n"+(state.core[tab+"-"+i]||"")).join("\n\n")+"\n\n"+BRAND_URL;
-  const visible=Object.entries(projects).filter(([key])=>state.profile.program === "dp" ? !key.includes("-") : key.startsWith(state.profile.program+"-"));
+  const markdown =
+    "# " +
+    project.label +
+    "\n\n" +
+    project.fields
+      .map((f, i) => "## " + f + "\n\n" + (state.core[tab + "-" + i] || ""))
+      .join("\n\n") +
+    "\n\n" +
+    BRAND_URL;
+  const visible = Object.entries(projects).filter(([key]) =>
+    state.profile.program === "dp"
+      ? !key.includes("-")
+      : key.startsWith(state.profile.program + "-"),
+  );
   return (
     <>
       <div className="page-heading">
@@ -140,7 +219,9 @@ export function CoreWorkspace({
           <SourceLink href={project.url}>Official IB guidance</SourceLink>
         </div>
       </div>
-      <div className="button-row"><ExportActions title={project.label+" notes"} markdown={markdown}/></div>
+      <div className="button-row">
+        <ExportActions title={project.label + " notes"} markdown={markdown} />
+      </div>
       <div className="core-fields">
         {project.fields.map((label, i) => (
           <div className="panel" key={tab + "-" + i}>

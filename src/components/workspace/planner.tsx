@@ -81,7 +81,9 @@ export function Planner({
     [title, setTitle] = useState(""),
     [due, setDue] = useState(localDate()),
     [subject, setSubject] = useState(state.profile.subjects[0] || "General"),
-    [kind, setKind] = useState<Task["kind"]>(state.profile.role === "teacher" ? "Lesson" : "Study"),
+    [kind, setKind] = useState<Task["kind"]>(
+      state.profile.role === "teacher" ? "Lesson" : "Study",
+    ),
     [showDone, setShowDone] = useState(false),
     [error, setError] = useState("");
   const [remaining, setRemaining] = useState(25 * 60),
@@ -341,7 +343,15 @@ export function Planner({
                   label="Task type"
                   value={kind}
                   onChange={(v) => setKind(v as Task["kind"])}
-                  options={state.profile.program === "dp" ? (state.profile.role === "teacher" ? ["Lesson","Study","IA","EE","TOK","CAS"] : ["Study","IA","EE","TOK","CAS"]) : state.profile.role === "teacher" ? ["Lesson","Study"] : ["Study"]}
+                  options={
+                    state.profile.program === "dp"
+                      ? state.profile.role === "teacher"
+                        ? ["Lesson", "Study", "IA", "EE", "TOK", "CAS"]
+                        : ["Study", "IA", "EE", "TOK", "CAS"]
+                      : state.profile.role === "teacher"
+                        ? ["Lesson", "Study"]
+                        : ["Study"]
+                  }
                 />
               </Field>
             </div>

@@ -34,7 +34,12 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useWorkspace } from "@/hooks/use-workspace";
-import type { Profile, Resource, ResourceKind } from "@/lib/workspace";
+import {
+  yearGroups,
+  type Profile,
+  type Resource,
+  type ResourceKind,
+} from "@/lib/workspace";
 import { ErrorNote, Picker } from "./shared";
 import { Dashboard } from "./dashboard";
 import { ResourceStudio } from "./resource-studio";
@@ -75,9 +80,39 @@ const nav = [
   { id: "curriculum", label: "IB curriculum hub", icon: BookOpen },
 ] as const;
 function roleNav(profile: Profile) {
-  return nav.filter(n=>profile.role!=="teacher" || n.id!=="practice").map(n=>({...n,label:n.id==="today"?(profile.role==="teacher"?"Teaching studio":profile.program==="pyp"?"My discovery space":"My workspace"):n.id==="assessment"?(profile.role==="teacher"?"Assessment desk":"Check my work"):n.id==="planner"&&profile.role==="teacher"?"Teaching calendar":n.id==="library"&&profile.role==="teacher"?"Teaching library":n.id==="practice"&&profile.program==="pyp"?"Play and discover":n.label}));
+  return nav
+    .filter((n) => profile.role !== "teacher" || n.id !== "practice")
+    .map((n) => ({
+      ...n,
+      label:
+        n.id === "today"
+          ? profile.role === "teacher"
+            ? "Teaching studio"
+            : profile.program === "pyp"
+              ? "My discovery space"
+              : "My workspace"
+          : n.id === "assessment"
+            ? profile.role === "teacher"
+              ? "Assessment desk"
+              : "Check my work"
+            : n.id === "planner" && profile.role === "teacher"
+              ? "Teaching calendar"
+              : n.id === "library" && profile.role === "teacher"
+                ? "Teaching library"
+                : n.id === "practice" && profile.program === "pyp"
+                  ? "Play and discover"
+                  : n.label,
+    }));
 }
-function Navigation({ view, go, profile }: { view: View; go: (v: View) => void; profile: Profile }) {
+function Navigation({
+  view,
+  go,
+  profile,
+}: {
+  view: View;
+  go: (v: View) => void;
+  profile: Profile;
+}) {
   const { setOpenMobile } = useSidebar();
   return (
     <SidebarMenu>
@@ -111,7 +146,11 @@ export function Workspace() {
   const [study, setStudy] = useState<Resource>();
   const [coachSubject, setCoachSubject] = useState("");
   const [notice, setNotice] = useState("");
-  useEffect(()=>{setEditing(undefined);setStudy(undefined);setKind(state.profile.role === "teacher" ? "presentation" : "flashcards");},[state.profile.role,state.profile.program]);
+  useEffect(() => {
+    setEditing(undefined);
+    setStudy(undefined);
+    setKind(state.profile.role === "teacher" ? "presentation" : "flashcards");
+  }, [state.profile.role, state.profile.program]);
   useEffect(() => {
     const sync = () => {
       const id = window.location.hash.slice(1);
@@ -135,7 +174,7 @@ export function Workspace() {
   };
   const create = (k: ResourceKind = "flashcards") => {
     setEditing(undefined);
-    setKind(canUseResource(state.profile.role,k)?k:"flashcards");
+    setKind(canUseResource(state.profile.role, k) ? k : "flashcards");
     go("studio");
   };
   const save = (r: Resource) => {
@@ -213,7 +252,9 @@ export function Workspace() {
             <Lightbulb size={20} />
             <strong>Understanding comes first.</strong>
             <p>Ask better questions. Make connections. Build your own ideas.</p>
-            <button onClick={() => coach(state.profile.subjects[0] || "Inquiry")}>
+            <button
+              onClick={() => coach(state.profile.subjects[0] || "Inquiry")}
+            >
               Explore with a coach <ArrowRight size={15} />
             </button>
           </div>
@@ -241,7 +282,8 @@ export function Workspace() {
             <SidebarTrigger />
             <span>Workspace /</span>
             <strong>
-              {roleNav(state.profile).find((n) => n.id === view)?.label || "Settings"}
+              {roleNav(state.profile).find((n) => n.id === view)?.label ||
+                "Settings"}
             </strong>
           </div>
           <div className="topbar-controls">
@@ -255,21 +297,45 @@ export function Workspace() {
               onChange={(v) =>
                 update((s) => ({
                   ...s,
-                  profile: { ...s.profile, role: v as "student" | "teacher" },
+                  profile: {
+                    ...s.profile,
+                    role: v as "student" | "teacher",
+                    yearGroup: yearGroups(
+                      s.profile.program,
+                      v as "student" | "teacher",
+                    ).includes(s.profile.yearGroup)
+                      ? s.profile.yearGroup
+                      : "Year 1",
+                  },
                 }))
               }
             />
             <Button
               size="sm"
               className="topbar-create"
-              onClick={() => create(state.profile.role === "teacher" ? "presentation" : "flashcards")}
+              onClick={() =>
+                create(
+                  state.profile.role === "teacher"
+                    ? "presentation"
+                    : "flashcards",
+                )
+              }
             >
               <Plus size={16} />
               Create
             </Button>
           </div>
         </header>
-        <main id="main-content" className={"workspace-main role-"+state.profile.role+" programme-"+state.profile.program} tabIndex={-1}>
+        <main
+          id="main-content"
+          className={
+            "workspace-main role-" +
+            state.profile.role +
+            " programme-" +
+            state.profile.program
+          }
+          tabIndex={-1}
+        >
           {store.storageError && <ErrorNote>{store.storageError}</ErrorNote>}
           {study ? (
             <StudySession
@@ -294,7 +360,7 @@ export function Workspace() {
               )}
               {view === "library" && (
                 <ResourceLibrary
-                  key={state.profile.role+state.profile.program}
+                  key={state.profile.role + state.profile.program}
                   state={state}
                   update={update}
                   create={create}
@@ -304,17 +370,55 @@ export function Workspace() {
               )}
               {view === "studio" && (
                 <ResourceStudio
-                  key={(editing?.id || "new") + kind + state.profile.role + state.profile.program}
+                  key={
+                    (editing?.id || "new") +
+                    kind +
+                    state.profile.role +
+                    state.profile.program
+                  }
                   profile={state.profile}
-                  initialKind={canUseResource(state.profile.role,kind)?kind:"flashcards"}
-                  editing={editing && canUseResource(state.profile.role,editing.kind)?editing:undefined}
+                  initialKind={
+                    canUseResource(state.profile.role, kind)
+                      ? kind
+                      : "flashcards"
+                  }
+                  editing={
+                    editing && canUseResource(state.profile.role, editing.kind)
+                      ? editing
+                      : undefined
+                  }
                   onSave={save}
                 />
               )}
-              {view === "assessment" && <AssessmentWorkspace key={state.profile.role+state.profile.program} state={state} update={update}/>}
-              {view === "grammar" && <GrammarWorkspace key={state.profile.role+state.profile.program} profile={state.profile}/>}
-              {view === "practice" && <PracticeArcade key={state.profile.program} state={state} update={update} study={setStudy} create={()=>create("flashcards")}/>}
-              {view === "planner" && <Planner key={state.profile.role+state.profile.program} state={state} update={update} />}
+              {view === "assessment" && (
+                <AssessmentWorkspace
+                  key={state.profile.role + state.profile.program}
+                  state={state}
+                  update={update}
+                />
+              )}
+              {view === "grammar" && (
+                <GrammarWorkspace
+                  key={state.profile.role + state.profile.program}
+                  profile={state.profile}
+                />
+              )}
+              {view === "practice" && (
+                <PracticeArcade
+                  key={state.profile.program}
+                  state={state}
+                  update={update}
+                  study={setStudy}
+                  create={() => create("flashcards")}
+                />
+              )}
+              {view === "planner" && (
+                <Planner
+                  key={state.profile.role + state.profile.program}
+                  state={state}
+                  update={update}
+                />
+              )}
               {view === "coach" && (
                 <CoachRoom
                   key={
@@ -333,7 +437,12 @@ export function Workspace() {
                 <CurriculumHub profile={state.profile} update={update} />
               )}
               {view === "core" && (
-                <CoreWorkspace key={state.profile.program} state={state} update={update} coach={coach} />
+                <CoreWorkspace
+                  key={state.profile.program}
+                  state={state}
+                  update={update}
+                  coach={coach}
+                />
               )}
               {view === "settings" && <SettingsPanel {...store} />}
             </>

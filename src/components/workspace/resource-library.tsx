@@ -6,7 +6,6 @@ import {
   Edit3,
   Play,
   Plus,
-  Printer,
   Search,
   Star,
   Trash2,
@@ -42,7 +41,10 @@ import {
   type WorkspaceState,
 } from "@/lib/workspace";
 import { EmptyState, KindIcon, Markdown, Picker, type Update } from "./shared";
-import { canUseResource, type Presentation as Deck } from "@/lib/learning-tools";
+import {
+  canUseResource,
+  type Presentation as Deck,
+} from "@/lib/learning-tools";
 import { ExportActions } from "./export-actions";
 import { PresentationPlayer } from "./presentation-player";
 import { lessonToPresentation } from "@/lib/lesson-presentation";
@@ -66,11 +68,12 @@ export function ResourceLibrary({
     [selected, setSelected] = useState<Resource>(),
     [deleting, setDeleting] = useState<Resource>(),
     [answers, setAnswers] = useState(false);
-  const [presenting,setPresenting] = useState<Resource>();
-  const teacher=state.profile.role === "teacher";
+  const [presenting, setPresenting] = useState<Resource>();
+  const teacher = state.profile.role === "teacher";
   const resources = state.resources.filter(
     (r) =>
-      r.program === state.profile.program && canUseResource(state.profile.role,r.kind) &&
+      r.program === state.profile.program &&
+      canUseResource(state.profile.role, r.kind) &&
       (kind === "all" || r.kind === kind) &&
       (subject === "all" || r.subject === subject) &&
       (!starred || r.starred) &&
@@ -107,7 +110,9 @@ export function ResourceLibrary({
           onChange={setKind}
           options={[
             { value: "all", label: "All resource types" },
-            ...resourceKinds.filter(k=>canUseResource(state.profile.role,k)).map((k) => ({ value: k, label: kindLabels[k] })),
+            ...resourceKinds
+              .filter((k) => canUseResource(state.profile.role, k))
+              .map((k) => ({ value: k, label: kindLabels[k] })),
           ]}
         />
         <Picker
@@ -219,7 +224,9 @@ export function ResourceLibrary({
         <EmptyState
           title="Make room for your next idea."
           action={
-            <Button onClick={() => create(teacher ? "presentation" : "flashcards")}>
+            <Button
+              onClick={() => create(teacher ? "presentation" : "flashcards")}
+            >
               Create a resource
             </Button>
           }
@@ -292,10 +299,67 @@ export function ResourceLibrary({
                     CSV / Anki
                   </Button>
                 )}
-                <ExportActions title={selected.title} markdown={resourceMarkdown(selected,answers)} presentation={selected.presentation}/>
-                {selected.presentation && <Button size="sm" onClick={()=>{setPresenting(selected);setSelected(undefined);}}><Play size={15}/>Present slides</Button>}
-                {teacher && selected.kind === "lesson-plan" && <Button size="sm" variant="outline" onClick={()=>{edit(lessonToPresentation(selected));setSelected(undefined);}}>Make classroom slides</Button>}
-                {selected.sequence && <Button size="sm" variant="outline" onClick={()=>downloadText("Year,Unit,Weeks,Learning goals,Inquiry,ATL,Assessment,Connections,Created with\r\n"+selected.sequence!.units.map(u=>[String(u.year),u.title,String(u.weeks),u.goals,u.inquiry,u.skills,u.assessment,u.connections,"https://IBgenie.com"].map(csvCell).join(",")).join("\r\n"),safeFilename(selected.title)+".csv","text/csv")}>Download sequence CSV</Button>}
+                <ExportActions
+                  title={selected.title}
+                  markdown={resourceMarkdown(selected, answers)}
+                  presentation={selected.presentation}
+                />
+                {selected.presentation && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setPresenting(selected);
+                      setSelected(undefined);
+                    }}
+                  >
+                    <Play size={15} />
+                    Present slides
+                  </Button>
+                )}
+                {teacher && selected.kind === "lesson-plan" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      edit(lessonToPresentation(selected));
+                      setSelected(undefined);
+                    }}
+                  >
+                    Make classroom slides
+                  </Button>
+                )}
+                {selected.sequence && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      downloadText(
+                        "Year,Unit,Weeks,Learning goals,Inquiry,ATL,Assessment,Connections,Created with\r\n" +
+                          selected
+                            .sequence!.units.map((u) =>
+                              [
+                                String(u.year),
+                                u.title,
+                                String(u.weeks),
+                                u.goals,
+                                u.inquiry,
+                                u.skills,
+                                u.assessment,
+                                u.connections,
+                                "https://IBgenie.com",
+                              ]
+                                .map(csvCell)
+                                .join(","),
+                            )
+                            .join("\r\n"),
+                        safeFilename(selected.title) + ".csv",
+                        "text/csv",
+                      )
+                    }
+                  >
+                    Download sequence CSV
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
@@ -318,7 +382,11 @@ export function ResourceLibrary({
                   Include answer key
                 </label>
               )}
-              <p className="muted-note">Downloads carry IBgenie.com branding. Print the downloaded PDF for a clean handout. Import PPTX into PowerPoint or Google Slides.</p>
+              <p className="muted-note">
+                Downloads carry IBgenie.com branding. Print the downloaded PDF
+                for a clean handout. Import PPTX into PowerPoint or Google
+                Slides.
+              </p>
               <div className="resource-print">
                 <Markdown>{resourceMarkdown(selected, answers)}</Markdown>
               </div>
@@ -326,7 +394,13 @@ export function ResourceLibrary({
           )}
         </DialogContent>
       </Dialog>
-      {presenting?.presentation && <PresentationPlayer title={presenting.title} presentation={presenting.presentation} onClose={()=>setPresenting(undefined)}/>}
+      {presenting?.presentation && (
+        <PresentationPlayer
+          title={presenting.title}
+          presentation={presenting.presentation}
+          onClose={() => setPresenting(undefined)}
+        />
+      )}
       <AlertDialog
         open={!!deleting}
         onOpenChange={(v) => {

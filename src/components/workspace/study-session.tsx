@@ -292,7 +292,9 @@ function QuizSession({ resource, update, onSave }: Props) {
               label="Quiz mode"
               options={[
                 { value: "practice", label: "Practice with feedback" },
-                { value: "timed", label: "Timed practice" },
+                ...(resource.program === "pyp"
+                  ? []
+                  : [{ value: "timed", label: "Timed practice" }]),
               ]}
             />
             {mode === "timed" && (

@@ -28,7 +28,10 @@ const nextConfig: NextConfig = {
   webpack(config, { isServer, webpack }) {
     // PptxGenJS documents this Webpack exclusion for its browser-only export path.
     // These modules remain available on the server.
-    if (!isServer) config.plugins.push(new webpack.IgnorePlugin({ resourceRegExp: /^node:(fs|https)$/ }));
+    if (!isServer)
+      config.plugins.push(
+        new webpack.IgnorePlugin({ resourceRegExp: /^node:(fs|https)$/ }),
+      );
     return config;
   },
   async headers() {
